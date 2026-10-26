@@ -30,7 +30,9 @@ Keep `pip<24.1`: newer pip releases reject Lightning 1.6.5's legacy package meta
 
 ## Data preparation
 
-Prepare the datasets in HDF5 format. Obtain data from its original providers or the [PanCollection project](https://github.com/liangjiandeng/PanCollection), subject to their terms. No datasets are redistributed here.
+This project uses the **[PanCollection](https://github.com/liangjiandeng/PanCollection)** pansharpening datasets. The selected experiment trains on WorldView-3 (WV3), QuickBird (QB), and GaoFen-2 (GF2), and evaluates cross-source generalization on WorldView-2 (WV2) at reduced resolution (RR) and full resolution (FR).
+
+Download the corresponding HDF5 datasets by following the instructions and download links in the **[PanCollection repository](https://github.com/liangjiandeng/PanCollection)**, and arrange the files as shown below. Please follow the dataset providers' usage terms and citation instructions. Dataset files are not included in this repository.
 
 ```text
 AsyDiff/
