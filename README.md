@@ -84,26 +84,6 @@ Optional environment variables are `REDUCED_DATA`, `FULL_DATA`, `OUTPUT_ROOT` (d
 
 The evaluator uses DDIM with `skip=20`, writes generated `.mat` files with the `sr` key, and preserves the original residual reconstruction and clipping. Its reconstruction-config/checkpoint arguments are compatibility inputs: it loads only the **transfer model**. The reconstruction YAML is therefore an empty documented placeholder. This entry point exports predictions; it does not calculate benchmark metrics.
 
-## Repository layout and checks
-
-```text
-configs/AsyDiff/    Selected training and inference configuration files
-ldm/               Required diffusion, network, and dataset implementation
-train.py           Unified multi-dataset training entry point
-main.py            Shared callbacks and data-module dependencies
-tools/train.sh     Training launcher
-infer/WV3/         Resumable checkpoint sweep (WV2 example defaults)
-scripts/WV3/       Reduced/full-resolution inference implementation
-tests/             Synthetic data and CPU smoke tests
-docs/              Release scope and compatibility notes
-```
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-The smoke tests use synthetic data without a text encoder; they do not download weights, train the full experiment, or establish numerical benchmark performance. See [release notes](docs/release_notes.md) for packaging changes and retained source behavior.
-
 ## Acknowledgments and license
 
 The implementation builds on [Latent Diffusion](https://github.com/CompVis/latent-diffusion) and [Stable Diffusion](https://github.com/Stability-AI/stablediffusion).
