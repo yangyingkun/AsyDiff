@@ -1,0 +1,35 @@
+model:
+  base_learning_rate: 8.0e-7
+  target: ldm.models.diffusion.AsyDiff_ddpm_eval_res_prompt.AsyDiff_model_eval_Gencase_Loss
+  params:
+    parameterization: "x0"
+    linear_start: 0.00085
+    linear_end: 0.0120
+    num_timesteps_cond: 1
+    log_every_t: 200
+    timesteps: 1000
+    edit_t1: 60
+    edit_t2: 120
+    first_stage_key: "image"
+    cond_stage_key: "char_img"
+    image_size: 16
+    channels: 8
+    cond_stage_trainable: False
+    conditioning_key: crossattn
+    monitor: val/loss_simple_ema
+    scale_factor: 0.18215
+    use_ema: True
+
+    unet_config:
+      target: ldm.modules.diffusionmodules.ablation.Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102
+      params:
+        use_checkpoint: True
+        in_channels: 1
+        out_channels: 1
+        middle_channels: 64
+
+    first_stage_config: "__is_first_stage__"
+
+    cond_stage_config: "__is_first_stage__" # we do not use this setting, leaving this for better extensive in the future
+
+    style_stage_config: "__is_first_stage__"

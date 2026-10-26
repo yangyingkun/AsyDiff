@@ -1,0 +1,4 @@
+# Compatibility input: the selected evaluator parses this configuration but
+# never instantiates or runs a reconstruction model. Only the transfer model
+# and its checkpoint are used.
+{}

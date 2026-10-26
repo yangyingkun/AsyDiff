@@ -1,0 +1,110 @@
+model:
+  base_learning_rate: 2.0e-5
+  target: ldm.models.diffusion.AsyDiff_ddpm_res_prompt.AsyDiff_train_stage1_trans_model_Gencase_Loss
+  params:
+    parameterization: "x0"
+    linear_start: 0.00085
+    linear_end: 0.0120
+    num_timesteps_cond: 1
+    log_every_t: 200
+    timesteps: 1000
+    edit_t1: 60
+    edit_t2: 120
+    first_stage_key: "image"
+    cond_stage_key: "char_img"
+    image_size: 64
+    channels: 8
+    cond_stage_trainable: False
+    conditioning_key: crossattn
+    monitor: val/loss_simple_ema
+    scale_factor: 0.18215
+    use_ema: True
+
+    unet_config:
+      target: ldm.modules.diffusionmodules.ablation.Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102
+      params:
+        use_checkpoint: True
+        in_channels: 1
+        out_channels: 1
+        middle_channels: 64
+
+    first_stage_config:
+      target: ldm.models.autoencoder.AutoencoderKL
+      params:
+        embed_dim: 8
+        monitor: val/rec_loss
+        ddconfig:
+          double_z: true
+          z_channels: 8
+          resolution: 256
+          in_channels: 8
+          out_ch: 8
+          ch: 128
+          ch_mult:
+          - 1
+          - 2
+          - 4
+          - 4
+          num_res_blocks: 2
+          attn_resolutions: []
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+
+    cond_stage_config: "__is_first_stage__" # we do not use this setting, leaving this for better extensive in the future
+
+    style_stage_config:
+      target: ldm.models.AsyDiff_encoder.miniUNet_enc_128
+
+wv3_data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 8
+    num_workers: 1
+    wrap: false
+    train:
+      target: ldm.data.AsyDiff_data.PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9
+      params:
+        size: 64
+        h5py_path: data/WV3/train_wv3.h5
+        img_scale: 2047
+        prompt: WV3
+qb_data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 8
+    num_workers: 1
+    wrap: false
+    train:
+      target: ldm.data.AsyDiff_data.PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9
+      params:
+        size: 64
+        h5py_path: data/QB/train_qb.h5
+        img_scale: 2047
+        prompt: QB
+gf2_data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 8
+    num_workers: 1
+    wrap: false
+    train:
+      target: ldm.data.AsyDiff_data.PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9
+      params:
+        size: 64
+        h5py_path: data/GF2/train_gf2.h5
+        img_scale: 1023
+        prompt: GF2
+
+
+lightning:
+  callbacks:
+    image_logger:
+      target: main.ImageLogger
+      params:
+        batch_frequency: 5000
+        max_images: 8
+        increase_log_steps: False
+
+  trainer:
+    benchmark: True
