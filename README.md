@@ -32,24 +32,7 @@ Keep `pip<24.1`: newer pip releases reject Lightning 1.6.5's legacy package meta
 
 This project uses the **[PanCollection](https://github.com/liangjiandeng/PanCollection)** pansharpening datasets. The selected experiment trains on WorldView-3 (WV3), QuickBird (QB), and GaoFen-2 (GF2), and evaluates cross-source generalization on WorldView-2 (WV2) at reduced resolution (RR) and full resolution (FR).
 
-Download the corresponding HDF5 datasets by following the instructions and download links in the **[PanCollection repository](https://github.com/liangjiandeng/PanCollection)**, and arrange the files as shown below. Please follow the dataset providers' usage terms and citation instructions. Dataset files are not included in this repository.
-
-```text
-AsyDiff/
-└── data/
-    ├── WV3/train_wv3.h5
-    ├── QB/train_qb.h5
-    ├── GF2/train_gf2.h5
-    └── WV2/
-        ├── test_wv2_data_RR.h5
-        └── test_wv2_data_FR.h5
-```
-
-HDF5 arrays use **N × C × H × W** layout. Training and reduced-resolution test files require `gt`, `lms`, `ms`, and `pan`. Full-resolution files require `lms`, `ms`, and `pan`. `lms` is upsampled multispectral imagery aligned with PAN; `ms` is the original low-resolution multispectral image. PAN has one channel. WV3/WV2 use eight spectral bands; QB/GF2 use four. Training patches are configured at 64 × 64. Values are divided by **2047** for WV3/QB and **1023** for GF2; the selected WV2 evaluator uses **2047**.
-
-Set each `*.params.train.params.h5py_path` in the [training configuration](configs/AsyDiff/WV3/config/Trans_trans.yaml), or override it on the command line. Font files and scene JSONL files are not needed: neither contributes to the selected loader's returned samples.
-
-The loader is `ldm.data.AsyDiff_data.PansharpeningDataset`. It takes only `h5py_path` and `img_scale`, and does not accept or return `prompt`. Training and evaluation condition only on image tensors. No CLIP weights or satellite text are needed. Use only trusted checkpoint sources.
+Download the corresponding HDF5 datasets by following the instructions and download links in the **[PanCollection repository](https://github.com/liangjiandeng/PanCollection)**. Please follow the dataset providers' usage terms and citation instructions. Dataset files are not included in this repository.
 
 ## Training: WV3 + QB + GF2
 
