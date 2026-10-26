@@ -52,7 +52,7 @@ AsyDiff/
 
 HDF5 arrays use **N × C × H × W** layout. Training and reduced-resolution test files require `gt`, `lms`, `ms`, and `pan`. Full-resolution files require `lms`, `ms`, and `pan`. `lms` is upsampled multispectral imagery aligned with PAN; `ms` is the original low-resolution multispectral image. PAN has one channel. WV3/WV2 use eight spectral bands; QB/GF2 use four. Training patches are configured at 64 × 64. Values are divided by **2047** for WV3/QB and **1023** for GF2; the selected WV2 evaluator uses **2047**.
 
-Set each `*.params.train.params.h5py_path` in the [training configuration](configs/AsyDiff/WV3/l1loss_stationary_wavelet_model_with_msca_spectral_without_dense_loss_ablation102_scene_weight/AsyDiff_Train_Stage1_trans_model_predx0_miniUnet_multidataset_kernel9_60.yaml), or override it on the command line. Font files and scene JSONL files are not needed: neither contributes to the selected loader's returned samples.
+Set each `*.params.train.params.h5py_path` in the [training configuration](configs/AsyDiff/WV3/config/Trans_trans.yaml), or override it on the command line. Font files and scene JSONL files are not needed: neither contributes to the selected loader's returned samples.
 
 Prepare the Hugging Face [CLIP ViT-L/14](https://huggingface.co/openai/clip-vit-large-patch14) tokenizer and text-encoder files locally. For example, download them separately:
 
@@ -77,14 +77,14 @@ CUDA_VISIBLE_DEVICES=1 bash tools/train.sh \
 The corresponding direct command is:
 
 ```bash
-CUDA_VISIBLE_DEVICES=1 python main_20epoch_prompt_multidataset.py \
-  --base configs/AsyDiff/WV3/l1loss_stationary_wavelet_model_with_msca_spectral_without_dense_loss_ablation102_scene_weight/AsyDiff_Train_Stage1_trans_model_predx0_miniUnet_multidataset_kernel9_60.yaml \
+CUDA_VISIBLE_DEVICES=1 python train.py \
+  --base configs/AsyDiff/WV3/config/Trans_trans.yaml \
   -t --gpus 0,
 ```
 
 `CUDA_VISIBLE_DEVICES=1` selects physical GPU 1; `--gpus 0,` selects its remapped logical GPU 0. Change the former for another physical GPU.
 
-The filename is historical: training defaults to **100,000 optimizer steps**, not 20 epochs. The batch size is **8**, and each batch comes from one sensor. Dataset sampling probabilities are proportional to `8 × N_WV3`, `4 × N_QB`, and `4 × N_GF2`. The base learning rate is `2e-5`; default learning-rate scaling yields **1.6e-4** for one GPU, batch size 8, and accumulation factor 1. The model predicts `x0` with L1 loss, 1,000 diffusion timesteps, and transfer offsets `edit_t1=60`, `edit_t2=120`.
+Training defaults to **100,000 optimizer steps**. The batch size is **8**, and each batch comes from one sensor. Dataset sampling probabilities are proportional to `8 × N_WV3`, `4 × N_QB`, and `4 × N_GF2`. The base learning rate is `2e-5`; default learning-rate scaling yields **1.6e-4** for one GPU, batch size 8, and accumulation factor 1. The model predicts `x0` with L1 loss, 1,000 diffusion timesteps, and transfer offsets `edit_t1=60`, `edit_t2=120`.
 
 Runs are saved under timestamped `logs/` directories. Checkpoints are saved every 10,000 training steps; the callback also enables epoch-end and last-checkpoint saving. Use the actual filenames under your run's `checkpoints/` directory, not a manually assumed run name. For a short training check or alternate data locations:
 
@@ -117,7 +117,8 @@ The evaluator uses DDIM with `skip=20`, writes generated `.mat` files with the `
 ```text
 configs/AsyDiff/    Selected training and inference configuration files
 ldm/               Required diffusion, network, and dataset implementation
-main*.py           Training entry point and its callback/data-module dependencies
+train.py           Unified multi-dataset training entry point
+main.py            Shared callbacks and data-module dependencies
 tools/train.sh     Training launcher
 infer/WV3/         Resumable WV2 checkpoint sweep
 scripts/WV3/       Reduced/full-resolution inference implementation

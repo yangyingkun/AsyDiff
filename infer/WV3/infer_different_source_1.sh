@@ -26,7 +26,7 @@ step_stride=$((10#$step_stride))
 for path in "$reduced_data" "$full_data"; do
     [[ -f "$path" ]] || { echo "Missing dataset: $path" >&2; exit 1; }
 done
-config_dir="configs/AsyDiff/WV3/l1loss_stationary_wavelet_model_with_msca_spectral_without_dense_loss_ablation102_scene_weight"
+config_dir="configs/AsyDiff/WV3/config"
 mkdir -p "$output_root" "$(dirname -- "$epoch_file")"
 while ((current_step < end_step)); do
     printf -v checkpoint '%s/step=%09d.ckpt' "$CHECKPOINT_DIR" "$current_step"
@@ -34,9 +34,9 @@ while ((current_step < end_step)); do
     python scripts/WV3/AsyDiff_eval_Stationary_Wavelet_Model_With_MSCA_spectral_res_ddim_scene_different_source_2_9.py \
         --pansharpening_reduced_path "$reduced_data" \
         --pansharpening_full_path "$full_data" \
-        --path_config_rec "$config_dir/AsyDiff_Eval_rec_model_predx0_miniUnet_60_without.yaml" \
+        --path_config_rec "$config_dir/Eval_rec.yaml" \
         --path_rec_model "$checkpoint" \
-        --path_config_trans "$config_dir/AsyDiff_Eval_trans_model_predx0_miniUnet_60_without.yaml" \
+        --path_config_trans "$config_dir/Eval_trans.yaml" \
         --path_trans_model "$checkpoint" \
         --save_reduced_mat_path "$output_root/reduced/step-$current_step" \
         --save_full_mat_path "$output_root/full/step-$current_step"

@@ -551,6 +551,8 @@ class CombinedDataModule(LightningDataModule):
         )
 
 if __name__ == "__main__":
+    # Config targets resolve to this running module without importing it twice.
+    sys.modules['train'] = sys.modules[__name__]
     # custom parser to specify config files, train, test and debug mode,
     # postfix, resume.
     # `--key value` arguments are interpreted as arguments to the trainer.
@@ -782,7 +784,7 @@ if __name__ == "__main__":
                 }
             },
             "lr_logger": {
-                "target": "main_20epoch.LearningRateLogger"
+                "target": "train.LearningRateLogger"
             },
             "cuda_callback": {
                 "target": "main.CUDACallback"

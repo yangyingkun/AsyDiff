@@ -4,6 +4,7 @@ import importlib
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -19,9 +20,9 @@ from ldm.modules.diffusionmodules import ablation
 from ldm.util import get_obj_from_str, instantiate_from_config
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG_DIR = ROOT / 'configs/AsyDiff/WV3/l1loss_stationary_wavelet_model_with_msca_spectral_without_dense_loss_ablation102_scene_weight'
-TRAIN_CONFIG = CONFIG_DIR / 'AsyDiff_Train_Stage1_trans_model_predx0_miniUnet_multidataset_kernel9_60.yaml'
-EVAL_CONFIG = CONFIG_DIR / 'AsyDiff_Eval_trans_model_predx0_miniUnet_60_without.yaml'
+CONFIG_DIR = ROOT / 'configs/AsyDiff/WV3/config'
+TRAIN_CONFIG = CONFIG_DIR / 'Trans_trans.yaml'
+EVAL_CONFIG = CONFIG_DIR / 'Eval_trans.yaml'
 EVAL_MODULE = 'scripts.WV3.AsyDiff_eval_Stationary_Wavelet_Model_With_MSCA_spectral_res_ddim_scene_different_source_2_9'
 
 
@@ -72,9 +73,20 @@ class ReleaseTests(unittest.TestCase):
         for path in CONFIG_DIR.glob('*.yaml'):
             check(OmegaConf.to_container(OmegaConf.load(path)))
         import main
-        import main_20epoch
+        import train
         main.ImageLogger(batch_frequency=5000, max_images=8)
-        main_20epoch.LearningRateLogger()
+        callback = instantiate_from_config({'target': 'train.LearningRateLogger'})
+        self.assertIsInstance(callback, train.LearningRateLogger)
+
+    def test_training_entrypoint_help(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / 'train.py'), '--help'],
+            cwd=str(ROOT), capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('--base', result.stdout)
+        self.assertIn('--gpus', result.stdout)
+        for name in ('Eval_rec.yaml', 'Eval_trans.yaml', 'Trans_trans.yaml'):
+            self.assertTrue((CONFIG_DIR / name).is_file())
 
     def test_synthetic_hdf5_and_regression_parity(self):
         evaluate = importlib.import_module(EVAL_MODULE)
