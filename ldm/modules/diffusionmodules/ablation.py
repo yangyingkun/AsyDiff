@@ -16,9 +16,9 @@ from .middle_block import TKSCrossAttention3D
 
 from .middle_block import Upsample3D, Downsample3D
 
-from .middle_block import MSCA_Block_GatedConv_With_SMFA_62
+from .middle_block import Middle_Block
 
-class Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102(nn.Module):
+class AsyDiff_Model(nn.Module):
     def __init__(
         self,
         in_channels,
@@ -48,52 +48,52 @@ class Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102(nn.Module):
         self.FE2 = nn.Conv3d(
             3, self.middle_channels, kernel_size=3, stride=1, padding=1)
 
-        self.pan_middle_block_1 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.pan_middle_block_1 = Middle_Block(
             self.middle_channels, self.middle_channels, self.middle_channels, self.middle_channels, self.embed_dim)
 
         self.pan_down_1 = Downsample3D(self.middle_channels)
-        self.pan_middle_block_2 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.pan_middle_block_2 = Middle_Block(
             self.middle_channels * 2, self.middle_channels * 2, self.middle_channels * 2, self.middle_channels, self.embed_dim)
 
         self.pan_down_2 = Downsample3D(self.middle_channels * 2)
-        self.pan_middle_block_3 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.pan_middle_block_3 = Middle_Block(
             self.middle_channels * 4, self.middle_channels * 4, self.middle_channels * 4, self.middle_channels, self.embed_dim)
 
-        self.ms_middle_block_1 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.ms_middle_block_1 = Middle_Block(
             self.middle_channels, self.middle_channels, self.middle_channels, self.middle_channels, self.embed_dim)
 
         self.ms_down_1 = Downsample3D(self.middle_channels)
-        self.ms_middle_block_2 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.ms_middle_block_2 = Middle_Block(
             self.middle_channels * 2, self.middle_channels * 2, self.middle_channels * 2, self.middle_channels, self.embed_dim)
 
         self.ms_down_2 = Downsample3D(self.middle_channels * 2)
-        self.ms_middle_block_3 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.ms_middle_block_3 = Middle_Block(
             self.middle_channels * 4, self.middle_channels * 4, self.middle_channels * 4, self.middle_channels, self.embed_dim)
 
-        self.gt_left_1 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.gt_left_1 = Middle_Block(
             self.middle_channels, self.middle_channels, self.middle_channels, self.middle_channels, self.embed_dim)
         self.gt_down_1 = Downsample3D(self.middle_channels)
-        self.gt_left_2 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.gt_left_2 = Middle_Block(
             self.middle_channels * 2, self.middle_channels * 2, self.middle_channels * 2, self.middle_channels, self.embed_dim)
         self.gt_down_2 = Downsample3D(self.middle_channels * 2)
-        self.gt_left_3 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.gt_left_3 = Middle_Block(
             self.middle_channels * 4, self.middle_channels * 4, self.middle_channels * 4, self.middle_channels, self.embed_dim)
         self.gt_down_3 = Downsample3D(self.middle_channels * 4)
 
-        self.gt_middle = MSCA_Block_GatedConv_With_SMFA_62(
+        self.gt_middle = Middle_Block(
             self.middle_channels * 8, self.middle_channels * 8, self.middle_channels * 8, self.middle_channels, self.embed_dim)
 
         self.gt_up_1 = Upsample3D(self.middle_channels * 8)
         self.gt_set_1 = nn.Conv3d(in_channels = self.middle_channels * 16, out_channels = self.middle_channels * 4, kernel_size = 1)
-        self.gt_right_1 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.gt_right_1 = Middle_Block(
             self.middle_channels * 4, self.middle_channels * 4, self.middle_channels * 4, self.middle_channels, self.embed_dim)
         self.gt_up_2 = Upsample3D(self.middle_channels * 4)
         self.gt_set_2 = nn.Conv3d(in_channels = self.middle_channels * 8, out_channels = self.middle_channels * 2, kernel_size = 1)
-        self.gt_right_2 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.gt_right_2 = Middle_Block(
             self.middle_channels * 2, self.middle_channels * 2, self.middle_channels * 2, self.middle_channels, self.embed_dim)
         self.gt_up_3 = Upsample3D(self.middle_channels * 2)
         self.gt_set_3 = nn.Conv3d(in_channels = self.middle_channels * 4, out_channels = self.middle_channels, kernel_size = 1)
-        self.gt_right_3 = MSCA_Block_GatedConv_With_SMFA_62(
+        self.gt_right_3 = Middle_Block(
             self.middle_channels, self.middle_channels, self.middle_channels, self.middle_channels, self.embed_dim)
 
         self.rebuild = nn.Conv3d(

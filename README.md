@@ -47,7 +47,7 @@ HDF5 arrays use **N × C × H × W** layout. Training and reduced-resolution tes
 
 Set each `*.params.train.params.h5py_path` in the [training configuration](configs/AsyDiff/WV3/config/Trans_trans.yaml), or override it on the command line. Font files and scene JSONL files are not needed: neither contributes to the selected loader's returned samples.
 
-The loader is `ldm.data.AsyDiff_data.PansharpeningDataset`. It takes `h5py_path` and `img_scale` (plus the optional compatibility arguments `size` and `scene_file`), and does not accept or return `prompt`. Training and evaluation condition only on image tensors. No CLIP weights or satellite text are needed. Use only trusted checkpoint sources.
+The loader is `ldm.data.AsyDiff_data.PansharpeningDataset`. It takes only `h5py_path` and `img_scale`, and does not accept or return `prompt`. Training and evaluation condition only on image tensors. No CLIP weights or satellite text are needed. Use only trusted checkpoint sources.
 
 ## Training: WV3 + QB + GF2
 

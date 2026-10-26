@@ -2,6 +2,7 @@
 import ast
 import copy
 import importlib
+import inspect
 import os
 from pathlib import Path
 import subprocess
@@ -17,7 +18,7 @@ from torch.utils.data import default_collate
 
 from ldm.data.AsyDiff_data import PansharpeningDataset
 from ldm.modules.diffusionmodules import ablation
-from ldm.modules.diffusionmodules.middle_block import MSCA_Block_GatedConv_With_SMFA_62
+from ldm.modules.diffusionmodules.middle_block import Middle_Block
 from ldm.util import get_obj_from_str, instantiate_from_config
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,6 +52,8 @@ class ReleaseTests(unittest.TestCase):
                 if 'target' in value:
                     obj = get_obj_from_str(value['target'])
                     self.assertTrue(callable(obj), value['target'])
+                    if value['target'] == 'ldm.data.AsyDiff_data.PansharpeningDataset':
+                        inspect.signature(obj).bind(**value.get('params', {}))
                     if value['target'].startswith(('ldm.', 'main.')):
                         module = importlib.import_module(obj.__module__)
                         self.assertTrue(Path(module.__file__).resolve().is_relative_to(ROOT) if hasattr(Path('.'), 'is_relative_to')
@@ -117,7 +120,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertIn('inputs', logged)
 
     def test_four_and_eight_band_forward_backward(self):
-        model = ablation.Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102(
+        model = ablation.AsyDiff_Model(
             in_channels=1, out_channels=1, middle_channels=8)
         self.assertFalse(hasattr(model, 'clip_text_model'))
         for channels in (4, 8):
@@ -148,7 +151,7 @@ class ReleaseTests(unittest.TestCase):
     def test_time_modulation_matches_legacy_outputs_and_gradients(self):
         # The old implementation discarded both text projections. Preserve its
         # effective math rather than replacing time modulation with new behavior.
-        block = MSCA_Block_GatedConv_With_SMFA_62(8, 8, 8, 8, 128)
+        block = Middle_Block(8, 8, 8, 8, 128)
         for bands in (4, 8):
             for text_scale in (0.0, 100.0):
                 reference = copy.deepcopy(block)

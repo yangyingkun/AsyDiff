@@ -4,7 +4,7 @@
 
 - The multi-dataset training entry point and its YAML configuration.
 - The selected WV2 reduced/full-resolution evaluator, its transfer configuration, and the resumable checkpoint sweep.
-- Model variant `Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102`, the effective definitions of its blocks, and their recursive Python dependencies.
+- Model variant `AsyDiff_Model`, the effective definitions of its blocks, and their recursive Python dependencies.
 - Training callbacks, the original autoencoder/style-encoder dependencies, and the HDF5 loader needed by this experiment.
 
 Other model variants, general font-generation tooling, dataset files, pretrained CLIP files, training checkpoints, logs, and results are excluded. The `ldm` package name and parameter names are retained for compatibility with existing state dictionaries. Project-specific modules/classes/configurations use the AsyDiff name.
@@ -23,7 +23,7 @@ Other model variants, general font-generation tooling, dataset files, pretrained
 
 This is a focused code release, not an algorithm redesign. The following source behaviors are preserved and should be considered when interpreting experiments:
 
-- The original effective `MSCA_Block_GatedConv_With_SMFA_62.forward` computed text projections but overwrote their outputs with time embeddings. The unused computations are now removed; both modulation stages still use time embeddings. Tests compare outputs and gradients exactly against the original effective calculation for four/eight bands and different text inputs.
+- The original effective `Middle_Block.forward` computed text projections but overwrote their outputs with time embeddings. The unused computations are now removed; both modulation stages still use time embeddings. Tests compare outputs and gradients exactly against the original effective calculation for four/eight bands and different text inputs.
 - Unused `embed2` and `text_embed1`/`text_embed2` parameter modules are retained for compatibility with existing model/optimizer state structure, but are never called. The frozen CLIP subtree is no longer instantiated. Loading older state dictionaries discards only `clip_text_model.*` keys at each backbone prefix; all other keys are validated normally. Use the new YAMLs rather than old configurations containing dataset `prompt` or backbone `clip_text_path`/`clip_device` arguments. Full optimizer/trainer resume from a production checkpoint has not been validated.
 - Removing CLIP initialization may change random-number consumption during a fresh training run, so same-seed retraining is not claimed to be bitwise identical. With fixed effective weights/inputs, the time-modulation computation is unchanged.
 - The backbone's retained name mentions stationary wavelets, but the selected implementation does not invoke a wavelet transform. Unused wavelet libraries and other ablation branches are not included.

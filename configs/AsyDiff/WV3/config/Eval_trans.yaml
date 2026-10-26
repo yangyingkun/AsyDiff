@@ -21,7 +21,7 @@ model:
     use_ema: True
 
     unet_config:
-      target: ldm.modules.diffusionmodules.ablation.Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102
+      target: ldm.modules.diffusionmodules.ablation.AsyDiff_Model
       params:
         use_checkpoint: True
         in_channels: 1

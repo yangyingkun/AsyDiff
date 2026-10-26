@@ -276,7 +276,7 @@ class TKSCrossAttention3D(nn.Module):
 
         return out
 
-class MSCA_Block_GatedConv_With_SMFA_62(nn.Module):
+class Middle_Block(nn.Module):
     def __init__(self, in_channels, middle_channels, out_channels, time_channels, embed_channels, LayerNorm_type='BiasFree'):
         super().__init__()
         self.in_channels = in_channels
