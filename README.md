@@ -106,6 +106,6 @@ The smoke tests use synthetic data without a text encoder; they do not download 
 
 ## Acknowledgments and license
 
-The implementation builds on [Latent Diffusion](https://github.com/CompVis/latent-diffusion), [Stable Diffusion](https://github.com/Stability-AI/stablediffusion), the CVPR 2024 work *Generate Like Experts: Multi-Stage Font Generation by Incorporating Font Transfer Process into Diffusion Models* by Bin Fu et al., and [FFG-benchmarks](https://github.com/clovaai/fewshot-font-generation). Original copyright notices are retained in [LICENSE](LICENSE) and [licenses/FFG-MIT.txt](licenses/FFG-MIT.txt).
+The implementation builds on [Latent Diffusion](https://github.com/CompVis/latent-diffusion) and [Stable Diffusion](https://github.com/Stability-AI/stablediffusion).
 
 No AsyDiff paper metadata, pretrained release, or benchmark scores are supplied in this source release; no publication citation is invented.
