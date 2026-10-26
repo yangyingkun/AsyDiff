@@ -17,23 +17,19 @@ class PansharpeningDataset(Dataset):
         # tensor type:
         gt1 = data["gt"][...]  # convert to np tpye for CV2.filter
         gt1 = np.array(gt1.transpose(0, 2, 3, 1), dtype=np.float32) / img_scale
-        # gt1 = gt1 * 2.0 - 1.0
         self.gt = torch.from_numpy(gt1)   # NxHxWxC
 
         lms1 = data["lms"][...]  # convert to np tpye for CV2.filter
         lms1 = np.array(lms1.transpose(0, 2, 3, 1), dtype=np.float32) / img_scale
-        # lms1 = lms1 * 2.0 - 1.0
         self.lms = torch.from_numpy(lms1)   # NxHxWxC
 
         ms1 = data["ms"][...]  # NxCxHxW=0,1,2,3
         ms1 = np.array(ms1.transpose(0, 2, 3, 1), dtype=np.float32) / img_scale  # NxHxWxC
-        # ms1 = ms1 * 2.0 - 1.0
         ms1_tmp = ms1
         self.ms_hp = torch.from_numpy(ms1_tmp)  # NxHxWxC:
 
         pan1 = data['pan'][...]  # Nx1xHxW
         pan1 = np.array(pan1.transpose(0, 2, 3, 1), dtype=np.float32) / img_scale  # NxHxWx1
-        # pan1 = pan1 * 2.0 - 1.0
         pan_hp_tmp = pan1
         self.pan_hp = torch.from_numpy(pan_hp_tmp)   # NxHxWx1
         data.close()
@@ -47,7 +43,6 @@ class PansharpeningDataset(Dataset):
         print(
             f"gt: {self.gt.size()}, lms: {self.lms.size()}, pan_hp: {self.pan_hp.size()}, ms_hp: {self.ms_hp.size()} with {img_scale}")
 
-        # self.grounding = [json.loads(q)['answer'][37:] for q in open(os.path.expanduser(grounding_file), "r")]
         self.scene = []  # Scene descriptions do not enter this model.
 
         # 提取所有的answer字段，并存储在一个列表中

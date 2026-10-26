@@ -25,7 +25,6 @@ from ldm.models.diffusion.ddpm import LatentDiffusion
 class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
     def __init__(self, style_stage_config, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # print('1')
         self.model = DiffusionWrapper_AsyDiff_model_eval_Gencase(
             kwargs['unet_config'], kwargs['conditioning_key'])
         self.instantiate_style_stage(style_stage_config)
@@ -36,20 +35,12 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
 
     @torch.no_grad()
     def init_from_ckpt(self, path, ignore_keys=list(), only_model=False):
-        # print('2')
         sd = torch.load(path, map_location="cpu")
         if "state_dict" in list(sd.keys()):
             sd = sd["state_dict"]
         keys = list(sd.keys())
 
-        # #################################################
-        # # ignore attn2 parameters, load pretrained diffuser model (e.g., SD released model)
-        # ignore_keys = []
-        # for k in keys:
-        #     if 'attn2' in k:
-        #         ignore_keys.append(k)
-
-        # # ignore unet parameters, training from scratch for diffuser
+        # Ignore UNet parameters when training the diffuser from scratch.
         ignore_keys = []
         for k in keys:
             if 'diffusion_model' in k:
@@ -157,7 +148,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
         assert alphas_cumprod.shape[0] == self.num_timesteps, 'alphas have to be defined for each timestep'
 
         to_torch = partial(torch.tensor, dtype=torch.float32)
-        # to_torch = partial(torch.tensor, dtype=torch.float16)
 
         self.register_buffer('betas', to_torch(betas))
         self.register_buffer('alphas', to_torch(alphas))
@@ -170,7 +160,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
                              to_torch(np.sqrt(alphas_cumprod)))
         self.register_buffer('sqrt_one_minus_alphas_cumprod',
                              to_torch(np.sqrt(1. - alphas_cumprod)))
-        # print('sqrt_one_minus_alphas_cumprod', np.sqrt(1. - alphas_cumprod))
         self.register_buffer('log_one_minus_alphas_cumprod',
                              to_torch(np.log(1. - alphas_cumprod)))
         self.register_buffer('sqrt_recip_alphas_cumprod',
@@ -515,7 +504,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
     def p_sample(self, rec_model, x, cond1, cond2, t, clip_denoised=False, repeat_noise=False,
                  return_codebook_ids=False, quantize_denoised=False, return_x0=False,
                  temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None):
-        # print('16')
         b, *_, device = *x.shape, x.device
         outputs = self.p_mean_variance(rec_model=rec_model, x=x, cond1=cond1, cond2=cond2, t=t, clip_denoised=clip_denoised,
                                        return_codebook_ids=return_codebook_ids,
@@ -530,7 +518,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
         else:
             model_mean, _, model_log_variance = outputs
 
-        # noise = default(noise, lambda: torch.randn_like(x))
         noise = noise_like(x.shape, device, repeat_noise) * temperature
         if noise_dropout > 0.:
             noise = torch.nn.functional.dropout(noise, p=noise_dropout)
@@ -582,7 +569,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
                                             quantize_denoised=quantize_denoised, return_x0=True,
                                             temperature=temperature[i], noise_dropout=noise_dropout,
                                             score_corrector=score_corrector, corrector_kwargs=corrector_kwargs)
-            # print(i, torch.max(img), torch.min(img))
             if i % log_every_t == 0 or i == timesteps - 1:
                 intermediates.append(x0_partial)
             if callback:
@@ -595,7 +581,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
     def ddim_p_sample(self, x, cond1, cond2, t, t_prev, clip_denoised=False, repeat_noise=False,
                       return_codebook_ids=False, quantize_denoised=False, return_x0=False,
                       temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None):
-        # print('16')
         b, *_, device = *x.shape, x.device
         t_in = t
         temp_time = t[0]
@@ -655,7 +640,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
                 k * (middle_params3 * torch.sqrt(self.forward_chage_trans_coeff_4) / self.forward_chage_trans_coeff_1)
 
             xt_prev = k * x_t + m * x_recon + n * z2
-            # xt_prev = x_t
 
         else:
             middle_params1 = extract_into_tensor(
@@ -714,7 +698,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
         ) if verbose else reversed(list(zip(main_timesteps, main_timesteps_prev)))
 
         for i, i_prev in iterator:
-            # print(i)
             ts = torch.full((b,), i, device=self.device, dtype=torch.long)
             ts_prev = torch.full(
                 (b,), i_prev, device=self.device, dtype=torch.long)
@@ -737,7 +720,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
     def single_p_sample(self, x, cond1, cond2, t, t_prev, clip_denoised=False, repeat_noise=False,
                       return_codebook_ids=False, quantize_denoised=False, return_x0=False,
                       temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None):
-        # print('16')
         b, *_, device = *x.shape, x.device
         t_in = t
         temp_time = t[0]
@@ -784,7 +766,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
                                    log_every_t=None):
         if not log_every_t:
             log_every_t = self.log_every_t
-        # timesteps = self.num_timesteps + self.edit_t1
         timesteps = self.num_timesteps
         if batch_size is not None:
             b = batch_size if batch_size is not None else shape[0]
@@ -806,8 +787,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
 
         main_timesteps = list(range(skip-1, timesteps, skip))
         main_timesteps_prev = [-1] + main_timesteps[:-1]
-        # main_timesteps = [self.edit_t1 - 1, self.edit_t2 - 1, timesteps - 1]
-        # main_timesteps_prev = [-1] + main_timesteps[:-1]
 
         # 创建迭代器（保持原有风格）
         iterator = tqdm(
@@ -816,12 +795,8 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
             total=len(main_timesteps)
         ) if verbose else reversed(list(zip(main_timesteps, main_timesteps_prev)))
 
-        # iterator = tqdm(reversed(range(0, timesteps)), desc='Progressive Generation',
-        #                 total=timesteps) if verbose else reversed(
-        #     range(0, timesteps))
 
         for i, i_prev in iterator:
-            # print(i)
             ts = torch.full((b,), i, device=self.device, dtype=torch.long)
             ts_prev = torch.full(
                 (b,), i_prev, device=self.device, dtype=torch.long)
@@ -831,7 +806,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
                                                  quantize_denoised=quantize_denoised, return_x0=True,
                                                  temperature=temperature[i], noise_dropout=noise_dropout,
                                                  score_corrector=score_corrector, corrector_kwargs=corrector_kwargs)
-            # print(i, torch.max(img), torch.min(img))
             if i % log_every_t == 0 or i == timesteps - 1:
                 intermediates.append(x0_partial)
             if callback:
@@ -844,7 +818,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
     def ddim_p_sample_without_trans(self, x, cond1, cond2, t, t_prev, clip_denoised=False, repeat_noise=False,
                       return_codebook_ids=False, quantize_denoised=False, return_x0=False,
                       temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None):
-        # print('16')
         b, *_, device = *x.shape, x.device
         t_in = t
         temp_time = t[0]
@@ -855,8 +828,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
         if temp_time >= self.edit_t2:
             model_out = z2
         elif temp_time < self.edit_t2 and temp_time >= self.edit_t1:
-            # model_out = self.apply_model(
-            #     x, t_in, cond2, return_ids=return_codebook_ids)
             model_out = self.apply_model(
                 x, t_in, cond1, return_ids=return_codebook_ids)
         else:
@@ -885,30 +856,6 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
             xt_prev = k * x_t + m * x_recon
 
         elif temp_time < self.edit_t2 and temp_time >= self.edit_t1:
-            # middle_params1 = extract_into_tensor(
-            #     self.alphas_cumprod, t, x_t.shape)
-            # middle_params2 = extract_into_tensor(
-            #     self.alphas_cumprod_prev, t_prev + 1, x_t.shape)
-            # middle_params3 = extract_into_tensor(
-            #     self.forward_chage_Ht, t, x_t.shape)
-            # middle_params4 = extract_into_tensor(
-            #     self.forward_chage_Ht_prev, t_prev + 1, x_t.shape)
-            # middle_params5 = extract_into_tensor(
-            #     self.forward_chage_Ft, t, x_t.shape)
-            # middle_params6 = extract_into_tensor(
-            #     self.forward_chage_Ft_prev, t_prev + 1, x_t.shape)
-
-            # k = torch.sqrt(1. - middle_params2 + middle_params6 * (self.forward_chage_trans_coeff_3 - self.forward_chage_trans_coeff_4) / self.forward_chage_trans_coeff_2) / \
-            #     torch.sqrt(1. - middle_params1 + middle_params5 * (self.forward_chage_trans_coeff_3 -
-            #                self.forward_chage_trans_coeff_4) / self.forward_chage_trans_coeff_2)
-            # m = (torch.sqrt(middle_params2) - middle_params4 * torch.sqrt(self.forward_chage_trans_coeff_3) / self.forward_chage_trans_coeff_1) - \
-            #     k * (torch.sqrt(middle_params1) - middle_params3 * torch.sqrt(
-            #         self.forward_chage_trans_coeff_3) / self.forward_chage_trans_coeff_1)
-            # n = (middle_params4 * torch.sqrt(self.forward_chage_trans_coeff_4) / self.forward_chage_trans_coeff_1) - \
-            #     k * (middle_params3 * torch.sqrt(self.forward_chage_trans_coeff_4) /
-            #          self.forward_chage_trans_coeff_1)
-
-            # xt_prev = k * x_t + m * x_recon + n * z2
             xt_prev = x_t
 
         else:
@@ -966,12 +913,8 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
             total=len(main_timesteps)
         ) if verbose else reversed(list(zip(main_timesteps, main_timesteps_prev)))
 
-        # iterator = tqdm(reversed(range(0, timesteps)), desc='Progressive Generation',
-        #                 total=timesteps) if verbose else reversed(
-        #     range(0, timesteps))
 
         for i, i_prev in iterator:
-            # print(i)
             ts = torch.full((b,), i, device=self.device, dtype=torch.long)
             ts_prev = torch.full(
                 (b,), i_prev, device=self.device, dtype=torch.long)
@@ -1006,7 +949,6 @@ class DiffusionWrapper_AsyDiff_model_eval_Gencase(pl.LightningModule):
         # cond[zcf] 表示 pan 部分
         zcs = torch.cat(cond['zcs'], 1).to(device)
         zcf = torch.cat(cond['zcf'], 1).to(device)
-        # t = t.to(torch.float32)
         t = t.to(device)
 
         out = self.diffusion_model(lrms=zcs, pan=zcf, xt=x, timesteps=t)

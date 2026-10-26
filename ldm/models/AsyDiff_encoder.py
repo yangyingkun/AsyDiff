@@ -13,9 +13,6 @@ class StyleEncoder(nn.Module):
 
         C = 32
         self.layers = nn.Sequential(
-            # ConvBlk(1, C, 3, 1, 1, norm='none', activ='none'),
-            # 之前输入为单通道，现在将其转换为4通道
-            # ConvBlk(4, C, 3, 1, 1, norm='none', activ='none'), # 对于4通道数据
             ConvBlk(8, C, 3, 1, 1, norm='none', activ='none'), # 对于4通道数据
             ConvBlk(C*1, C*2, 3, 1, 1, downsample=True),
             ConvBlk(C*2, C*2, 3, 1, 1, downsample=False),

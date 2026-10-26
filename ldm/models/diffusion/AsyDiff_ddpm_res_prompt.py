@@ -28,9 +28,6 @@ class AsyDiff_train_stage1_trans_model_Gencase_Loss(LatentDiffusion):
         self.model = DiffusionWrapper_AsyDiff_train_stage1_trans_model_Gencase(
             kwargs['unet_config'], kwargs['conditioning_key'])
         self.instantiate_style_stage(style_stage_config)
-        # 配置梯度裁剪参数 (Lightning推荐方式)
-        # self.gradient_clip_val = 0.03  # 梯度裁剪的范数值
-        # self.gradient_clip_algorithm = "norm"  # 裁剪算法: "norm" 或 "value"
 
         # 添加日志输出，方便调试
         print(f"Training steps set to: {self.training_steps}")
@@ -116,7 +113,6 @@ class AsyDiff_train_stage1_trans_model_Gencase_Loss(LatentDiffusion):
     def configure_optimizers(self):
         lr = self.learning_rate
         params = list(self.model.parameters())
-        # params = params + list(self.style_stage_model.parameters())
         if self.learn_logvar:
             print('Diffusion model optimizing logvar')
             params.append(self.logvar)
@@ -147,7 +143,6 @@ class AsyDiff_train_stage1_trans_model_Gencase_Loss(LatentDiffusion):
         print("~~~~~~~~~~~~~~~~")
         alphas = 1. - betas
         alphas_cumprod = np.cumprod(alphas, axis=0)
-        # print('alphas_cumprod', alphas_cumprod)
         alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
 
         timesteps, = betas.shape
@@ -169,7 +164,6 @@ class AsyDiff_train_stage1_trans_model_Gencase_Loss(LatentDiffusion):
                              to_torch(np.sqrt(alphas_cumprod)))
         self.register_buffer('sqrt_one_minus_alphas_cumprod',
                              to_torch(np.sqrt(1. - alphas_cumprod)))
-        # print('sqrt_one_minus_alphas_cumprod', np.sqrt(1. - alphas_cumprod))
         self.register_buffer('log_one_minus_alphas_cumprod',
                              to_torch(np.log(1. - alphas_cumprod)))
         self.register_buffer('sqrt_recip_alphas_cumprod',
@@ -303,14 +297,7 @@ class AsyDiff_train_stage1_trans_model_Gencase_Loss(LatentDiffusion):
         # cond[zcf] 表示 pan 部分
         zf = torch.cat(c['zf'], 0)
 
-        # temp1 = t < self.edit_t1
-        # temp1 = temp1.view(-1, 1, 1, 1)
-        # temp2 = t >= self.edit_t2
-        # temp2 = temp2.view(-1, 1, 1, 1)
-        # params_1 = extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * (x_start * temp1 + zf * temp2)
-        # params_2 = torch.sqrt(1. - extract_into_tensor(self.alphas_cumprod, t, x_start.shape)) * noise
 
-        # return params_1 + params_2
 
         stage1_temp1 = t >= self.edit_t2
         stage1_temp1 = stage1_temp1.long()
@@ -364,7 +351,6 @@ class AsyDiff_train_stage1_trans_model_Gencase_Loss(LatentDiffusion):
         zf = torch.cat(cond['zf'], 0)
         target = temp1.view(-1, 1, 1, 1) * zf + temp2.view(-1, 1, 1, 1) * x_start
 
-        # target = x_start
         loss_simple = self.get_loss(
             model_output, target, mean=False).mean([1, 2, 3])
         loss_dict.update({f'{prefix}/loss_simple': loss_simple.mean()})
@@ -439,7 +425,6 @@ class AsyDiff_train_stage1_trans_model_Gencase_Loss(LatentDiffusion):
 
         xcf = self.get_input_ori(batch, "grey_char_img")
 
-        # zcf, _ = self.style_stage_model.encode(xcf)
         # zcf 表示 pan 部分
         zcf = xcf
         if N is not None:

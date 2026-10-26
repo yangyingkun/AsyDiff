@@ -195,7 +195,6 @@ if __name__ == "__main__":
     trans_model = instantiate_from_config(config2.model)
 
     sd = torch.load(path_trans_model, map_location="cpu", weights_only=True)
-    # trans_model.load_state_dict(torch.load(path_trans_model)['state_dict'], strict=False)
 
     if "state_dict" in list(sd.keys()):
         sd = sd["state_dict"]
@@ -217,7 +216,6 @@ if __name__ == "__main__":
 
     device = torch.device(
         "cuda") if torch.cuda.is_available() else torch.device("cpu")
-    # rec_model = rec_model.to(device)
     trans_model = trans_model.to(device)
 
     trans_model = trans_model.eval()
@@ -237,7 +235,6 @@ if __name__ == "__main__":
 
     ms1 = data["ms"][...]  # NxCxHxW=0,1,2,3
     ms1 = np.array(ms1, dtype=np.float32)  # NxHxWxC
-    # ms1_tmp = get_edge(ms1)  # NxHxWxC
     ms1_tmp = ms1
     ms_hp = ms1_tmp.astype(np.float32)
 
@@ -253,7 +250,6 @@ if __name__ == "__main__":
     print(
         f"lms: {lms.shape}, pan_hp: {pan_hp.shape}, ms_hp: {ms_hp.shape}")
 
-    # gt_path = 'mat_file/WV3/Stationary_Wavelet_Model_With_MSCA_spectral_without_dense_loss_ablation15-epoch-5'
     gt_path = opt.save_reduced_mat_path
     print(gt_path)
     if not os.path.exists(gt_path):
@@ -265,7 +261,6 @@ if __name__ == "__main__":
 
     batch_size = 1
 
-    # source = read_font(source_path)
 
     iter = 0
     batch = 1
@@ -275,8 +270,6 @@ if __name__ == "__main__":
                 # 清理不需要的变量
                 if iter > 0:
                     torch.cuda.empty_cache()
-                # for index in range(pan_hp.shape[0]):
-                # pan_image = pan_hp[index,:,:,:]
                 if iter + batch >= pan_hp.shape[0]:
                     pan_image = pan_hp[iter:pan_hp.shape[0], :, :, :]
                     lms_image = lms[iter:pan_hp.shape[0], :, :, :]
@@ -318,18 +311,9 @@ if __name__ == "__main__":
                 nbs, nc, nh, nw = zf.shape
                 shape = [nbs, nc, nh, nw]
 
-                # z0, progressives = trans_model.progressive_denoising(
-                #     rec_model, c1, c2, shape=shape)
-                # import time
-
-                # start = time.time()
-
                 z0, progressives = trans_model.ddim_progressive_denoising(
                     c1, c1, shape=shape, skip=20)
 
-                # end = time.time()
-                # print(end - start)
-                # assert 0 > 1
                 x_gen = z0
 
                 for gen_img in x_gen:
@@ -368,9 +352,6 @@ if __name__ == "__main__":
     data = h5py.File(opt.pansharpening_full_path)  # NxCxHxW = 0x1x2x3=8806x8x64x64
     print('数据读取完成')
 
-    # gt1 = data["gt"][...]  # convert to np tpye for CV2.filter
-    # gt1 = np.array(gt1, dtype=np.float32)
-    # gt = gt1                       # 保持数据为numpy
 
     lms1 = data["lms"][...]  # convert to np tpye for CV2.filter
     lms1 = np.array(lms1, dtype=np.float32)
@@ -378,7 +359,6 @@ if __name__ == "__main__":
 
     ms1 = data["ms"][...]  # NxCxHxW=0,1,2,3
     ms1 = np.array(ms1, dtype=np.float32)  # NxHxWxC
-    # ms1_tmp = get_edge(ms1)  # NxHxWxC
     ms1_tmp = ms1
     ms_hp = ms1_tmp.astype(np.float32)
 
@@ -394,7 +374,6 @@ if __name__ == "__main__":
     print(
         f"lms: {lms.shape}, pan_hp: {pan_hp.shape}, ms_hp: {ms_hp.shape}")
 
-    # gt_path = 'mat_file/WV3/Stationary_Wavelet_Model_With_MSCA_spectral_without_dense_loss_ablation15-epoch-5'
     gt_path = opt.save_full_mat_path
     print(gt_path)
     if not os.path.exists(gt_path):
@@ -406,7 +385,6 @@ if __name__ == "__main__":
 
     batch_size = 1
 
-    # source = read_font(source_path)
 
     iter = 0
     batch = 1
@@ -416,8 +394,6 @@ if __name__ == "__main__":
                 # 清理不需要的变量
                 if iter > 0:
                     torch.cuda.empty_cache()
-                # for index in range(pan_hp.shape[0]):
-                # pan_image = pan_hp[index,:,:,:]
                 if iter + batch >= pan_hp.shape[0]:
                     pan_image = pan_hp[iter:pan_hp.shape[0], :, :, :]
                     lms_image = lms[iter:pan_hp.shape[0], :, :, :]
@@ -460,8 +436,6 @@ if __name__ == "__main__":
                 nbs, nc, nh, nw = zf.shape
                 shape = [nbs, nc, nh, nw]
 
-                # z0, progressives = trans_model.progressive_denoising(
-                #     rec_model, c1, c2, shape=shape)
                 z0, progressives = trans_model.ddim_progressive_denoising(
                     c1, c1, shape=shape, skip=20)
                 x_gen = z0

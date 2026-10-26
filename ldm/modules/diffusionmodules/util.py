@@ -26,11 +26,6 @@ def make_beta_schedule(schedule, n_timestep, linear_start=1e-4, linear_end=2e-2,
         betas = 1 - alphas[1:] / alphas[:-1]
         betas = np.clip(betas, a_min=0, a_max=0.999)
 
-    # elif schedule == "cosine":
-    #     return betas_for_alpha_bar(
-    #         n_timestep,
-    #         lambda t: math.cos((t+0.008)/1.008 * math.pi/2)**2,
-    #     )
 
     elif schedule == "sigmoid":
         start = -3
@@ -46,7 +41,6 @@ def make_beta_schedule(schedule, n_timestep, linear_start=1e-4, linear_end=2e-2,
                           tau).sigmoid() + v_end) / (v_end - v_start)
         alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
         betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
-        # return torch.clip(betas, 0, 0.999)
 
     elif schedule == "sqrt_linear":
         betas = torch.linspace(linear_start, linear_end,
@@ -69,7 +63,6 @@ def make_ddim_timesteps(ddim_discr_method, num_ddim_timesteps, num_ddpm_timestep
         raise NotImplementedError(
             f'There is no ddim discretization method called "{ddim_discr_method}"')
 
-    # assert ddim_timesteps.shape[0] == num_ddim_timesteps
     # add one to get the final alpha values right (the ones from first scale to data during sampling)
     steps_out = ddim_timesteps + 1
     if verbose:
@@ -93,10 +86,8 @@ def make_ddim_sampling_parameters(alphacums, ddim_timesteps, eta, verbose=True):
     return sigmas, alphas, alphas_prev
 
 def extract_into_tensor(a, t, x_shape):
-    # print(f't: {t. shape}')
     b, *_ = t.shape
     out = a.gather(-1, t)
-    # print(f'out: {out.shape}')
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
 
 def timestep_embedding(timesteps, dim, max_period=10000, repeat_only=False):

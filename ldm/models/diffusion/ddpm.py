@@ -228,7 +228,6 @@ class DDPM(pl.LightningModule):
                                        cosine_s=cosine_s)
         alphas = 1. - betas
         alphas_cumprod = np.cumprod(alphas, axis=0)
-        # print('alphas_cumprod', alphas_cumprod)
         alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
 
         timesteps, = betas.shape
@@ -246,7 +245,6 @@ class DDPM(pl.LightningModule):
         # calculations for diffusion q(x_t | x_{t-1}) and others
         self.register_buffer('sqrt_alphas_cumprod', to_torch(np.sqrt(alphas_cumprod)))
         self.register_buffer('sqrt_one_minus_alphas_cumprod', to_torch(np.sqrt(1. - alphas_cumprod)))
-        # print('sqrt_one_minus_alphas_cumprod', np.sqrt(1. - alphas_cumprod))
         self.register_buffer('log_one_minus_alphas_cumprod', to_torch(np.log(1. - alphas_cumprod)))
         self.register_buffer('sqrt_recip_alphas_cumprod', to_torch(np.sqrt(1. / alphas_cumprod)))
         self.register_buffer('sqrt_recipm1_alphas_cumprod', to_torch(np.sqrt(1. / alphas_cumprod - 1)))
@@ -268,9 +266,6 @@ class DDPM(pl.LightningModule):
                     2 * self.posterior_variance * to_torch(alphas) * (1 - self.alphas_cumprod))
         elif self.parameterization == "x0":
             lvlb_weights = 0.5 * np.sqrt(torch.Tensor(alphas_cumprod)) / (2. * 1 - torch.Tensor(alphas_cumprod))
-        # elif self.parameterization == "x0":
-        #     lvlb_weights = (self.betas ** 2) * self.alphas_cumprod_prev / (
-        #             2 * self.posterior_variance  * (1 - self.alphas_cumprod))
         elif self.parameterization == "v":
             lvlb_weights = torch.ones_like(self.betas ** 2 / (
                     2 * self.posterior_variance * to_torch(alphas) * (1 - self.alphas_cumprod)))
@@ -377,8 +372,6 @@ class DDPM(pl.LightningModule):
         )
 
     def predict_start_from_z_and_v(self, x_t, t, v):
-        # self.register_buffer('sqrt_alphas_cumprod', to_torch(np.sqrt(alphas_cumprod)))
-        # self.register_buffer('sqrt_one_minus_alphas_cumprod', to_torch(np.sqrt(1. - alphas_cumprod)))
         return (
                 extract_into_tensor(self.sqrt_alphas_cumprod, t, x_t.shape) * x_t -
                 extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_t.shape) * v
@@ -528,8 +521,6 @@ class DDPM(pl.LightningModule):
         return loss, loss_dict
 
     def forward(self, x, *args, **kwargs):
-        # b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
-        # assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
         t = torch.randint(0, self.num_timesteps, (x.shape[0],), device=self.device).long()
         return self.p_losses(x, t, *args, **kwargs)
 
@@ -762,7 +753,6 @@ class LatentDiffusion(DDPM):
             elif config == "__is_unconditional__":
                 print(f"Training {self.__class__.__name__} as an unconditional model.")
                 self.cond_stage_model = None
-                # self.be_unconditional = True
             else:
                 model = instantiate_from_config(config)
                 self.cond_stage_model = model.eval()
@@ -789,10 +779,8 @@ class LatentDiffusion(DDPM):
 
     def get_first_stage_encoding(self, encoder_posterior):
         if isinstance(encoder_posterior, DiagonalGaussianDistribution):
-            # print('enter path 1')
             z = encoder_posterior.sample()
         elif isinstance(encoder_posterior, torch.Tensor):
-            # print('enter path 2')
             z = encoder_posterior
         else:
             raise NotImplementedError(f"encoder_posterior of type '{type(encoder_posterior)}' not yet implemented")
@@ -985,7 +973,6 @@ class LatentDiffusion(DDPM):
         return self.p_losses(x, c, t, *args, **kwargs)
 
     def apply_model(self, x_noisy, t, cond, return_ids=False):
-        # print('apply_model')
         if isinstance(cond, dict):
             # hybrid case, cond is expected to be a dict
             pass
@@ -1024,7 +1011,6 @@ class LatentDiffusion(DDPM):
         noise = default(noise, lambda: torch.randn_like(x_start))
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
         model_output = self.apply_model(x_noisy, t, cond)
-        # print('model_output', model_output)
 
         loss_dict = {}
         prefix = 'train' if self.training else 'val'
@@ -1041,10 +1027,8 @@ class LatentDiffusion(DDPM):
         loss_simple = self.get_loss(model_output, target, mean=False).mean([1, 2, 3])
         loss_dict.update({f'{prefix}/loss_simple': loss_simple.mean()})
 
-        # logvar_t = self.logvar[t].to(self.device)
         logvar_t = self.logvar[t.cpu()].to(self.device)
         loss = loss_simple / torch.exp(logvar_t) + logvar_t
-        # loss = loss_simple / torch.exp(self.logvar) + self.logvar
         if self.learn_logvar:
             loss_dict.update({f'{prefix}/loss_gamma': loss.mean()})
             loss_dict.update({'logvar': self.logvar.data.mean()})
@@ -1346,7 +1330,6 @@ class LatentDiffusion(DDPM):
             with ema_scope("Sampling"):
                 samples, z_denoise_row = self.sample_log(cond=c, batch_size=N, ddim=use_ddim,
                                                          ddim_steps=ddim_steps, eta=ddim_eta)
-                # samples, z_denoise_row = self.sample(cond=c, batch_size=N, return_intermediates=True)
             x_samples = self.decode_first_stage(samples)
             log["samples"] = x_samples
             if plot_denoise_rows:
@@ -1360,8 +1343,6 @@ class LatentDiffusion(DDPM):
                     samples, z_denoise_row = self.sample_log(cond=c, batch_size=N, ddim=use_ddim,
                                                              ddim_steps=ddim_steps, eta=ddim_eta,
                                                              quantize_denoised=True)
-                    # samples, z_denoise_row = self.sample(cond=c, batch_size=N, return_intermediates=True,
-                    #                                      quantize_denoised=True)
                 x_samples = self.decode_first_stage(samples.to(self.device))
                 log["samples_x0_quantized"] = x_samples
 

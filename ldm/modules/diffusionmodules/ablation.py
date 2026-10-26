@@ -177,6 +177,5 @@ class AsyDiff_Model(nn.Module):
 
         output = self.rebuild(gt_right_3)
         output = output.squeeze(1)
-        # print(th.max(lrms), th.max(pan), th.max(xt), th.max(output), th.min(lrms), th.min(pan), th.min(xt), th.min(output), target, timesteps)
 
         return output

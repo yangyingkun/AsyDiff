@@ -58,17 +58,14 @@ class DataModuleFromConfig(pl.LightningDataModule):
                  wrap=False, num_workers=None, shuffle_test_loader=False, use_worker_init_fn=False,
                  shuffle_val_dataloader=False, reuse_datasets=False, persistent_workers=False):
         super().__init__()
-        # print('1')
         self.batch_size = batch_size
         self.dataset_configs = dict()
         self.num_workers = num_workers if num_workers is not None else batch_size * 2
         self.use_worker_init_fn = use_worker_init_fn
         self.reuse_datasets = reuse_datasets
         self.persistent_workers = persistent_workers and self.num_workers > 0
-        # print(train is not None)
         if train is not None:
             self.dataset_configs["train"] = train
-            # print(self.dataset_configs['train'])
             print('开始构建数据集dataloader')
             self.train_dataloader = self._train_dataloader
             print("数据集dataloader构建完成")
@@ -88,44 +85,31 @@ class DataModuleFromConfig(pl.LightningDataModule):
         # Keep the legacy preparation path for other entry points.
         if self.reuse_datasets:
             return
-        # print('2')
         for data_cfg in self.dataset_configs.values():
             instantiate_from_config(data_cfg)
 
     def setup(self, stage=None):
         if self.reuse_datasets and hasattr(self, "datasets"):
             return
-        # print('3')
         self.datasets = dict(
             (k, instantiate_from_config(self.dataset_configs[k]))
             for k in self.dataset_configs)
-        # print("…………………………………………")
-        # for k in self.dataset_configs:
-            # print(f'k:{k}, dataset:{self.dataset_configs[k]}')
-        # print("…………………………………………")
-        # print(self.datasets)
-        # print(self.wrap)
         if self.wrap:
             for k in self.datasets:
                 self.datasets[k] = WrappedDataset(self.datasets[k])
 
     def _train_dataloader(self):
-        # print('4')
         # 开始数据处理
         is_iterable_dataset = isinstance(self.datasets['train'], Txt2ImgIterableBaseDataset)
         if is_iterable_dataset or self.use_worker_init_fn:
             init_fn = worker_init_fn
         else:
             init_fn = None
-        # print("******************")
-        # print(self.datasets['train'])
-        # print("*******************")
         return DataLoader(self.datasets["train"], batch_size=self.batch_size,
                           num_workers=self.num_workers, shuffle=False if is_iterable_dataset else True,
                           worker_init_fn=init_fn, persistent_workers=self.persistent_workers)
 
     def _val_dataloader(self, shuffle=False):
-        # print('5')
         if isinstance(self.datasets['validation'], Txt2ImgIterableBaseDataset) or self.use_worker_init_fn:
             init_fn = worker_init_fn
         else:
@@ -137,7 +121,6 @@ class DataModuleFromConfig(pl.LightningDataModule):
                           shuffle=shuffle)
 
     def _test_dataloader(self, shuffle=False):
-        # print('6')
         is_iterable_dataset = isinstance(self.datasets['train'], Txt2ImgIterableBaseDataset)
         if is_iterable_dataset or self.use_worker_init_fn:
             init_fn = worker_init_fn
@@ -151,7 +134,6 @@ class DataModuleFromConfig(pl.LightningDataModule):
                           num_workers=self.num_workers, worker_init_fn=init_fn, shuffle=shuffle)
 
     def _predict_dataloader(self, shuffle=False):
-        # print('7')
         if isinstance(self.datasets['predict'], Txt2ImgIterableBaseDataset) or self.use_worker_init_fn:
             init_fn = worker_init_fn
         else:
@@ -255,9 +237,6 @@ class ImageLogger(Callback):
                 global_step,
                 current_epoch,
                 batch_idx)
-            # path = os.path.join(root, filename)
-            # os.makedirs(os.path.split(path)[0], exist_ok=True)
-            # Image.fromarray(grid).save(path)
 
     def log_img(self, pl_module, batch, batch_idx, split="train"):
         check_idx = batch_idx if self.log_on_batch_idx else pl_module.global_step
@@ -303,13 +282,9 @@ class ImageLogger(Callback):
         return False
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        # if not self.disabled and (pl_module.global_step > 0 or self.log_first_step):
-        #     self.log_img(pl_module, batch, batch_idx, split="train")
         pass
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        # if not self.disabled and pl_module.global_step > 0:
-        #     self.log_img(pl_module, batch, batch_idx, split="val")
         if hasattr(pl_module, 'calibrate_grad_norm'):
             if (pl_module.calibrate_grad_norm and batch_idx % 25 == 0) and batch_idx > 0:
                 self.log_gradients(trainer, pl_module, batch_idx=batch_idx)
@@ -322,7 +297,6 @@ class CUDACallback(Callback):
         torch.cuda.synchronize(trainer.root_gpu)
         self.start_time = time.time()
 
-    # def on_train_epoch_end(self, trainer, pl_module, outputs):
     def on_train_epoch_end(self, trainer, pl_module):
         torch.cuda.synchronize(trainer.root_gpu)
         max_memory = torch.cuda.max_memory_allocated(trainer.root_gpu) / 2 ** 20

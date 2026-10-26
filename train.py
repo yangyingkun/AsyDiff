@@ -192,15 +192,12 @@ class DataModuleFromConfig(pl.LightningDataModule):
                  wrap=False, num_workers=None, shuffle_test_loader=False, use_worker_init_fn=False,
                  shuffle_val_dataloader=False):
         super().__init__()
-        # print('1')
         self.batch_size = batch_size
         self.dataset_configs = dict()
         self.num_workers = num_workers if num_workers is not None else batch_size * 2
         self.use_worker_init_fn = use_worker_init_fn
-        # print(train is not None)
         if train is not None:
             self.dataset_configs["train"] = train
-            # print(self.dataset_configs['train'])
             print('开始构建数据集dataloader')
             self.train_dataloader = self._train_dataloader
             print("数据集dataloader构建完成")
@@ -218,7 +215,6 @@ class DataModuleFromConfig(pl.LightningDataModule):
         self.wrap = wrap
 
     def prepare_data(self):
-        # print('2')
         for data_cfg in self.dataset_configs.values():
             instantiate_from_config(data_cfg)
 
@@ -372,9 +368,6 @@ class ImageLogger(Callback):
                 global_step,
                 current_epoch,
                 batch_idx)
-            # path = os.path.join(root, filename)
-            # os.makedirs(os.path.split(path)[0], exist_ok=True)
-            # Image.fromarray(grid).save(path)
 
     def log_img(self, pl_module, batch, batch_idx, split="train"):
         check_idx = batch_idx if self.log_on_batch_idx else pl_module.global_step
@@ -422,13 +415,9 @@ class ImageLogger(Callback):
         return False
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        # if not self.disabled and (pl_module.global_step > 0 or self.log_first_step):
-        #     self.log_img(pl_module, batch, batch_idx, split="train")
         pass
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        # if not self.disabled and pl_module.global_step > 0:
-        #     self.log_img(pl_module, batch, batch_idx, split="val")
         if hasattr(pl_module, 'calibrate_grad_norm'):
             if (pl_module.calibrate_grad_norm and batch_idx % 25 == 0) and batch_idx > 0:
                 self.log_gradients(trainer, pl_module, batch_idx=batch_idx)
@@ -448,7 +437,6 @@ class CUDACallback(Callback):
         torch.cuda.synchronize(trainer.root_gpu)
         self.start_time = time.time()
 
-    # def on_train_epoch_end(self, trainer, pl_module, outputs):
     def on_train_epoch_end(self, trainer, pl_module):
         torch.cuda.synchronize(trainer.root_gpu)
         max_memory = torch.cuda.max_memory_allocated(
@@ -616,8 +604,6 @@ if __name__ == "__main__":
             raise ValueError("Cannot find {}".format(opt.resume))
         if os.path.isfile(opt.resume):
             paths = opt.resume.split("/")
-            # idx = len(paths)-paths[::-1].index("logs")+1
-            # logdir = "/".join(paths[:idx])
             logdir = "/".join(paths[:-2])
             ckpt = opt.resume
         else:
@@ -700,29 +686,7 @@ if __name__ == "__main__":
         logger_cfg = OmegaConf.merge(default_logger_cfg, logger_cfg)
         trainer_kwargs["logger"] = instantiate_from_config(logger_cfg)
 
-        # modelcheckpoint - use TrainResult/EvalResult(checkpoint_on=metric) to
-        # specify which metric is used to determine best models
-        ###########################################################
-        # all ckpt for every 2 checkpoints
-        ##########################################################
-        # default_modelckpt_cfg = {
-        #     "target": "pytorch_lightning.callbacks.ModelCheckpoint",
-        #     "params": {
-        #         "dirpath": ckptdir,
-        #         "filename": "{epoch:06}",
-        #         "verbose": True,
-        #         "save_last": True,
-        #         'monitor': None,            # 不监控任何指标
-        #         'save_top_k': -1,           # 保留最后6个模型
-        #         'every_n_epochs': 1         # 每3轮保存一次
-        #     }
-        # }
-        # if hasattr(model, "monitor"):
-        #     print(f"Monitoring {model.monitor} as checkpoint metric.")
-        #     # default_modelckpt_cfg["params"]["monitor"] = model.monitor
-        #     # default_modelckpt_cfg["params"]["save_top_k"] = -1
-        #     default_modelckpt_cfg["params"]["every_n_epochs"] = 1
-        #     default_modelckpt_cfg["params"]["monitor"] = None
+        # Save all checkpoints at the configured training-step interval.
 
         default_modelckpt_cfg = {
             "target": "pytorch_lightning.callbacks.ModelCheckpoint",
@@ -780,7 +744,6 @@ if __name__ == "__main__":
                 "target": "main.LearningRateMonitor",
                 "params": {
                     "logging_interval": "step",
-                    # "log_momentum": True
                 }
             },
             "lr_logger": {
@@ -826,7 +789,6 @@ if __name__ == "__main__":
 
         trainer_kwargs["callbacks"] = [instantiate_from_config(
             callbacks_cfg[k]) for k in callbacks_cfg]
-        # trainer_kwargs['max_epochs'] = 20
         trainer_kwargs['max_steps'] = trainer_opt.max_steps if trainer_opt.max_steps > 0 else 100000
         trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
         trainer.logdir = logdir
@@ -866,7 +828,6 @@ if __name__ == "__main__":
             print(
                 f"{k}, {gf2_data.datasets[k].__class__.__name__}, {len(gf2_data.datasets[k])}")
 
-        # data = create_exact_weight_generator(qb_data, gf2_data, wv3_data)
         batch_size = config.gf2_data.params.batch_size  # 从配置获取或使用默认值
         data = CombinedDataModule(qb_data, gf2_data, wv3_data, batch_size)
 
@@ -884,11 +845,9 @@ if __name__ == "__main__":
         lightning_config.trainer.accumulate_grad_batches = accumulate_grad_batches
         if opt.scale_lr:
             model.learning_rate = accumulate_grad_batches * ngpu * bs * base_lr
-            # model.learning_rate = base_lr
             print(
                 "Setting learning rate to {:.2e} = {} (accumulate_grad_batches) * {} (num_gpus) * {} (batchsize) * {:.2e} (base_lr)".format(
                     model.learning_rate, accumulate_grad_batches, ngpu, bs, base_lr))
-            # print("Setting learning rate to {:.2e}".format(model.learning_rate))
         else:
             model.learning_rate = base_lr
             print("++++ NOT USING LR SCALING ++++")

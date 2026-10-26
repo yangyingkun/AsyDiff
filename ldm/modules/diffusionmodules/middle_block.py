@@ -142,8 +142,6 @@ class SMFA_3D(nn.Module):
         x_l = X * F.interpolate(
             self.gelu(self.easa_conv2(x_s * self.alpha + x_v * self.beta)),
             size=(d, h, w),
-            # mode='trilinear',  # 使用三线性插值
-            # align_corners=True  # 添加align_corners参数
         )
 
         y_l = self.lde_conv2(self.gelu(self.lde_conv1(Y)))
@@ -325,7 +323,6 @@ class Middle_Block(nn.Module):
 
         skip1 = Xt
         Xt = self.norm1(Xt)
-        # data = Xt + time_embed1
         data = Xt * time_embed1 + time_embed2
 
         data = self.smfa1(data)

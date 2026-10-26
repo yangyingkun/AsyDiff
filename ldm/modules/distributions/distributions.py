@@ -4,22 +4,14 @@ import numpy as np
 
 class DiagonalGaussianDistribution(object):
     def __init__(self, parameters, deterministic=False):
-        # print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
         self.parameters = parameters
-        # print(self.parameters.shape)
         self.mean, self.logvar = torch.chunk(parameters, 2, dim=1)
-        # print(self.mean.shape, self.logvar.shape)
         self.logvar = torch.clamp(self.logvar, -30.0, 20.0)
-        # print(self.logvar.shape)
         self.deterministic = deterministic
         self.std = torch.exp(0.5 * self.logvar)
-        # print(self.std.shape)
         self.var = torch.exp(self.logvar)
-        # print(self.var.shape)
         if self.deterministic:
             self.var = self.std = torch.zeros_like(self.mean).to(device=self.parameters.device)
-        # print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-        # assert 0>1
 
     def sample(self):
         x = self.mean + self.std * torch.randn(self.mean.shape).to(device=self.parameters.device)

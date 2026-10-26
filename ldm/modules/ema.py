@@ -27,11 +27,9 @@ class LitEma(nn.Module):
         self.register_buffer('num_updates', torch.tensor(0, dtype=torch.int))
 
     def forward(self, model):
-        # decay = self.decay
 
         if self.num_updates >= 0:
             self.num_updates += 1
-            # print(self.num_updates)
             decay = min(self.decay, (1 + self.num_updates) / (10 + self.num_updates))
 
         one_minus_decay = 1.0 - decay
