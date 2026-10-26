@@ -1,6 +1,6 @@
 # AsyDiff
 
-This repository contains the selected multi-dataset pansharpening experiment for **AsyDiff**. It trains the same transfer diffusion model on **WorldView-3 (WV3), QuickBird (QB), and GaoFen-2 (GF2)** and runs cross-source inference on **WorldView-2 (WV2)** at reduced and full resolution.
+This repository contains the selected multi-dataset pansharpening experiment for **AsyDiff**, with joint training on **WorldView-3 (WV3), QuickBird (QB), and GaoFen-2 (GF2)**. Evaluation uses reduced-resolution (RR) and full-resolution (FR) data. **WorldView-2 (WV2) is the example selected in the supplied inference scripts, not the only dataset with RR/FR test data.**
 
 The release includes the requested training/inference entry points, their configuration files, and the required model/data-loading code. Other ablations, datasets, pretrained weights, checkpoints, and generated results are not included. Repository documentation follows the installation → data → training → evaluation organization of [SCL-IOD](https://github.com/LuowenDragon/SCL-IOD).
 
@@ -30,7 +30,7 @@ Keep `pip<24.1`: newer pip releases reject Lightning 1.6.5's legacy package meta
 
 ## Data preparation
 
-This project uses the **[PanCollection](https://github.com/liangjiandeng/PanCollection)** pansharpening datasets. The selected experiment trains on WorldView-3 (WV3), QuickBird (QB), and GaoFen-2 (GF2), and evaluates cross-source generalization on WorldView-2 (WV2) at reduced resolution (RR) and full resolution (FR).
+This project uses the **[PanCollection](https://github.com/liangjiandeng/PanCollection)** pansharpening datasets. **WV3, GF2, and QB each provide reduced-resolution (RR) and full-resolution (FR) test data**, in addition to the training data used by this project. The WV2 paths in the supplied inference scripts are an evaluation example; they do not restrict the dataset description or evaluation scope to WV2.
 
 Download the corresponding HDF5 datasets by following the instructions and download links in the **[PanCollection repository](https://github.com/liangjiandeng/PanCollection)**. Please follow the dataset providers' usage terms and citation instructions. Dataset files are not included in this repository.
 
@@ -65,9 +65,9 @@ CUDA_VISIBLE_DEVICES=1 bash tools/train.sh --max_steps 2 \
   gf2_data.params.train.params.h5py_path=/path/to/train_gf2.h5
 ```
 
-## Evaluation: WV2 reduced/full resolution
+## Evaluation: reduced and full resolution
 
-The script remains under `infer/WV3/` to preserve the original entry-point location, but **its test data are WV2**. No prompt argument is required or accepted. Set the checkpoint directory and a starting step that actually exists:
+Choose the RR and FR test files for the sensor you want to evaluate. The supplied `infer/WV3/eval.sh` uses **WV2 as its default example**; its directory name does not select the test sensor. No prompt argument is required or accepted. To run the provided WV2 example, set the checkpoint directory and a starting step that actually exists:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
@@ -76,7 +76,9 @@ START_STEP=10000 END_STEP=80001 STEP_STRIDE=10000 \
 bash infer/WV3/eval.sh
 ```
 
-The original sweep defaults (`START_STEP=9`, `END_STEP=81000`, `STEP_STRIDE=10000`) are preserved if no overrides are provided. They only work if files such as `step=000000009.ckpt` exist; set `START_STEP` to match your checkpoints. `END_STEP` is exclusive. Do not change the dataset to another sensor without adapting this eight-band, 2047-normalized evaluator.
+The original sweep defaults (`START_STEP=9`, `END_STEP=81000`, `STEP_STRIDE=10000`) are preserved if no overrides are provided. They only work if files such as `step=000000009.ckpt` exist; set `START_STEP` to match your checkpoints. `END_STEP` is exclusive.
+
+To evaluate WV3, GF2, or QB, select that sensor's RR/FR files with `REDUCED_DATA` and `FULL_DATA`, and use a separate `OUTPUT_ROOT`. **The current Python evaluator still contains the WV2 example's fixed eight-band and 2047 normalization settings.** Match the channel handling and normalization to the selected sensor before running it; changing file paths alone is not sufficient for every sensor. Availability of RR/FR test sets in PanCollection should not be confused with automatic multi-sensor support in this example script.
 
 Optional environment variables are `REDUCED_DATA`, `FULL_DATA`, `OUTPUT_ROOT` (default `results/WV2`), and `EPOCH_FILE`. The sweep stops on a missing input or failed inference and advances its resume marker **only after successful inference**. Leave `START_STEP` unset when resuming from that marker.
 
@@ -90,7 +92,7 @@ ldm/               Required diffusion, network, and dataset implementation
 train.py           Unified multi-dataset training entry point
 main.py            Shared callbacks and data-module dependencies
 tools/train.sh     Training launcher
-infer/WV3/         Resumable WV2 checkpoint sweep
+infer/WV3/         Resumable checkpoint sweep (WV2 example defaults)
 scripts/WV3/       Reduced/full-resolution inference implementation
 tests/             Synthetic data and CPU smoke tests
 docs/              Release scope and compatibility notes
