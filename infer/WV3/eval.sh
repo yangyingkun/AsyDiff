@@ -31,7 +31,7 @@ mkdir -p "$output_root" "$(dirname -- "$epoch_file")"
 while ((current_step < end_step)); do
     printf -v checkpoint '%s/step=%09d.ckpt' "$CHECKPOINT_DIR" "$current_step"
     [[ -f "$checkpoint" ]] || { echo "Missing checkpoint: $checkpoint (set START_STEP to an existing step)" >&2; exit 1; }
-    python scripts/WV3/AsyDiff_eval_Stationary_Wavelet_Model_With_MSCA_spectral_res_ddim_scene_different_source_2_9.py \
+    python scripts/WV3/eval.py \
         --pansharpening_reduced_path "$reduced_data" \
         --pansharpening_full_path "$full_data" \
         --path_config_rec "$config_dir/Eval_rec.yaml" \

@@ -103,7 +103,7 @@ The script remains under `infer/WV3/` to preserve the original entry-point locat
 CUDA_VISIBLE_DEVICES=0 \
 CHECKPOINT_DIR=logs/YOUR_RUN/checkpoints \
 START_STEP=10000 END_STEP=80001 STEP_STRIDE=10000 \
-bash infer/WV3/infer_different_source_1.sh
+bash infer/WV3/eval.sh
 ```
 
 The original sweep defaults (`START_STEP=9`, `END_STEP=81000`, `STEP_STRIDE=10000`) are preserved if no overrides are provided. They only work if files such as `step=000000009.ckpt` exist; set `START_STEP` to match your checkpoints. `END_STEP` is exclusive. Do not change the dataset to another sensor without adapting this eight-band, 2047-normalized evaluator.

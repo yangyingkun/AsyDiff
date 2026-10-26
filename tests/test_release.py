@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG_DIR = ROOT / 'configs/AsyDiff/WV3/config'
 TRAIN_CONFIG = CONFIG_DIR / 'Trans_trans.yaml'
 EVAL_CONFIG = CONFIG_DIR / 'Eval_trans.yaml'
-EVAL_MODULE = 'scripts.WV3.AsyDiff_eval_Stationary_Wavelet_Model_With_MSCA_spectral_res_ddim_scene_different_source_2_9'
+EVAL_MODULE = 'scripts.WV3.eval'
 
 
 class StandInTextEncoder(nn.Module):
@@ -148,7 +148,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertTrue(torch.isfinite(result).all())
 
     def test_sweep_progress_is_transactional(self):
-        script = ROOT / 'infer/WV3/infer_different_source_1.sh'
+        script = ROOT / 'infer/WV3/eval.sh'
         with tempfile.TemporaryDirectory() as directory:
             tmp = Path(directory)
             fake_python = tmp / 'python'
