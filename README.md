@@ -2,8 +2,6 @@
 
 This repository contains the multi-dataset pansharpening implementation of **AsyDiff**, with joint training on **WorldView-3 (WV3), QuickBird (QB), and GaoFen-2 (GF2)**. Evaluation uses the reduced-resolution (RR) and full-resolution (FR) test sets of **WV3, WV2, QB, and GF2**.
 
-The release includes the requested training/inference entry points, their configuration files, and the required model/data-loading code. Other ablations, datasets, pretrained weights, checkpoints, and generated results are not included. Repository documentation follows the installation → data → training → evaluation organization of [SCL-IOD](https://github.com/LuowenDragon/SCL-IOD).
-
 ## Requirements and installation
 
 The source environment uses Python **3.8.20**, PyTorch **2.4.1 + CUDA 12.1**, torchvision **0.19.1**, PyTorch Lightning **1.6.5**. No text encoder or Transformers installation is required. Use a CUDA-capable NVIDIA GPU for training and the supplied evaluation entry point.
