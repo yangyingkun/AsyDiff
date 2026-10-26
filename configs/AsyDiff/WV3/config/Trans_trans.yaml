@@ -63,12 +63,11 @@ wv3_data:
     num_workers: 1
     wrap: false
     train:
-      target: ldm.data.AsyDiff_data.PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9
+      target: ldm.data.AsyDiff_data.PansharpeningDataset
       params:
         size: 64
         h5py_path: data/WV3/train_wv3.h5
         img_scale: 2047
-        prompt: WV3
 qb_data:
   target: main.DataModuleFromConfig
   params:
@@ -76,12 +75,11 @@ qb_data:
     num_workers: 1
     wrap: false
     train:
-      target: ldm.data.AsyDiff_data.PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9
+      target: ldm.data.AsyDiff_data.PansharpeningDataset
       params:
         size: 64
         h5py_path: data/QB/train_qb.h5
         img_scale: 2047
-        prompt: QB
 gf2_data:
   target: main.DataModuleFromConfig
   params:
@@ -89,12 +87,11 @@ gf2_data:
     num_workers: 1
     wrap: false
     train:
-      target: ldm.data.AsyDiff_data.PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9
+      target: ldm.data.AsyDiff_data.PansharpeningDataset
       params:
         size: 64
         h5py_path: data/GF2/train_gf2.h5
         img_scale: 1023
-        prompt: GF2
 
 
 lightning:

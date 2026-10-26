@@ -304,6 +304,7 @@ class MSCA_Block_GatedConv_With_SMFA_62(nn.Module):
             linear(self.in_channels, self.in_channels),
         )
 
+        # Legacy, unused parameters kept for checkpoint/optimizer compatibility.
         self.text_embed1 = nn.Sequential(
             linear(self.embed_channels, self.out_channels),
             nn.SiLU(),
@@ -315,17 +316,12 @@ class MSCA_Block_GatedConv_With_SMFA_62(nn.Module):
             linear(self.out_channels, self.out_channels),
         )
 
-    def forward(self, Xt, t, prompt):
+    def forward(self, Xt, t):
         b, c, _, _, _ = Xt.shape
         time_embed1 = self.tim_embed1(t)
         time_embed1 = time_embed1.reshape(b, c, 1, 1, 1)
         time_embed2 = self.tim_embed2(t)
         time_embed2 = time_embed2.reshape(b, c, 1, 1, 1)
-
-        text_embed1 = self.text_embed1(prompt)
-        text_embed1 = time_embed1.reshape(b, c, 1, 1, 1)
-        text_embed2 = self.text_embed2(prompt)
-        text_embed2 = time_embed2.reshape(b, c, 1, 1, 1)
 
         skip1 = Xt
         Xt = self.norm1(Xt)
@@ -336,8 +332,8 @@ class MSCA_Block_GatedConv_With_SMFA_62(nn.Module):
         data = data + skip1
 
         data = self.norm2(data)
-        # data = data + text_embed1
-        data = data * text_embed1 + text_embed2
+        # Preserve the original effective modulation (both stages use time).
+        data = data * time_embed1 + time_embed2
         data = self.smfa2(data)
 
         return data

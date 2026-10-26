@@ -122,8 +122,6 @@ def calculate_regression_weights_advanced_batch_cv2(LRMS_up_batch, PAN_batch, wi
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--prompt', choices=['WV2'], default='WV2',
-                        help='This entry point uses eight-band WV2 data normalized by 2047.')
     parser.add_argument(
         "--indir",
         type=str,
@@ -315,7 +313,7 @@ if __name__ == "__main__":
                 zsf = zsf.cuda()
                 zcf = zcf.cuda()
 
-                c1 = dict(zf=[zf], zcs=[zsf], zcf=[zcf], prompt=[[opt.prompt]])
+                c1 = dict(zf=[zf], zcs=[zsf], zcf=[zcf])
 
                 nbs, nc, nh, nw = zf.shape
                 shape = [nbs, nc, nh, nw]
@@ -457,7 +455,7 @@ if __name__ == "__main__":
                 zsf = zsf.cuda()
                 zcf = zcf.cuda()
 
-                c1 = dict(zf=[zf], zcs=[zsf], zcf=[zcf], prompt=[[opt.prompt]])
+                c1 = dict(zf=[zf], zcs=[zsf], zcf=[zcf])
 
                 nbs, nc, nh, nw = zf.shape
                 shape = [nbs, nc, nh, nw]

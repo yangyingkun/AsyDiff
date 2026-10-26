@@ -1,5 +1,6 @@
-"""Offline CPU smoke tests; synthetic data and a stand-in text encoder only."""
+"""Offline CPU smoke tests using synthetic data; no text encoder or downloads."""
 import ast
+import copy
 import importlib
 import os
 from pathlib import Path
@@ -7,16 +8,16 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
 
 import h5py
 import numpy as np
 from omegaconf import OmegaConf
 import torch
-from torch import nn
+from torch.utils.data import default_collate
 
-from ldm.data.AsyDiff_data import PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9
+from ldm.data.AsyDiff_data import PansharpeningDataset
 from ldm.modules.diffusionmodules import ablation
+from ldm.modules.diffusionmodules.middle_block import MSCA_Block_GatedConv_With_SMFA_62
 from ldm.util import get_obj_from_str, instantiate_from_config
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,22 +27,12 @@ EVAL_CONFIG = CONFIG_DIR / 'Eval_trans.yaml'
 EVAL_MODULE = 'scripts.WV3.eval'
 
 
-class StandInTextEncoder(nn.Module):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    def encode(self, text):
-        return torch.zeros(1, 768)
-
-
 def small_model(path):
     config = OmegaConf.load(path).model
     config.params.unet_config.params.middle_channels = 8
-    config.params.unet_config.params.clip_device = 'cpu'
     config.params.first_stage_config = '__is_first_stage__'
     config.params.style_stage_config = '__is_first_stage__'
-    with patch.object(ablation, 'FrozenCLIPEmbedder', StandInTextEncoder):
-        return instantiate_from_config(config)
+    return instantiate_from_config(config)
 
 
 class ReleaseTests(unittest.TestCase):
@@ -92,8 +83,9 @@ class ReleaseTests(unittest.TestCase):
         evaluate = importlib.import_module(EVAL_MODULE)
         rng = np.random.RandomState(23)
         with tempfile.TemporaryDirectory() as directory:
-            for channels, scale, prompt in [(4, 1023, 'GF2'), (8, 2047, 'WV3')]:
-                path = Path(directory) / (prompt + '.h5')
+            model = small_model(TRAIN_CONFIG)
+            for channels, scale, sensor in [(4, 1023, 'GF2'), (8, 2047, 'WV3')]:
+                path = Path(directory) / (sensor + '.h5')
                 arrays = {
                     'gt': rng.rand(2, channels, 64, 64).astype('float32') * scale,
                     'lms': rng.rand(2, channels, 64, 64).astype('float32') * scale,
@@ -103,11 +95,10 @@ class ReleaseTests(unittest.TestCase):
                 with h5py.File(path, 'w') as handle:
                     for name, array in arrays.items():
                         handle[name] = array
-                dataset = PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9(
-                    str(path), scale, prompt)
+                dataset = PansharpeningDataset(str(path), scale)
                 sample = dataset[0]
                 self.assertEqual(len(dataset), 2)
-                self.assertEqual(sample['prompt'], prompt)
+                self.assertNotIn('prompt', sample)
                 self.assertEqual(tuple(sample['image'].shape), (64, 64, channels))
                 expected_gt = (arrays['gt'][0] / scale).transpose(1, 2, 0)
                 expected_lms = (arrays['lms'][0] / scale).transpose(1, 2, 0)
@@ -117,14 +108,21 @@ class ReleaseTests(unittest.TestCase):
                     expected_lms[None], (arrays['pan'][:1] / scale).transpose(0, 2, 3, 1))
                 np.testing.assert_allclose(sample['pan_branch'], weights[0] * detail[0, :, :, None], rtol=1e-6)
                 self.assertTrue(torch.isfinite(sample['pan_branch']).all())
+                batch = default_collate([sample])
+                loss, _ = model.shared_step(batch)
+                self.assertTrue(torch.isfinite(loss))
+                loss.backward()
+                model.zero_grad(set_to_none=True)
+                logged = model.log_images(batch, N=1)
+                self.assertIn('inputs', logged)
 
     def test_four_and_eight_band_forward_backward(self):
-        with patch.object(ablation, 'FrozenCLIPEmbedder', StandInTextEncoder):
-            model = ablation.Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102(
-                in_channels=1, out_channels=1, middle_channels=8, clip_device='cpu')
-        for channels, prompt in [(4, 'QB'), (8, 'WV3')]:
+        model = ablation.Stationary_Wavelet_Model_With_MSCA_Spectral_Without_Dense_102(
+            in_channels=1, out_channels=1, middle_channels=8)
+        self.assertFalse(hasattr(model, 'clip_text_model'))
+        for channels in (4, 8):
             x = torch.randn(1, channels, 64, 64)
-            output = model(x, x, [prompt], x, torch.tensor([50]))
+            output = model(x, x, x, torch.tensor([50]))
             self.assertEqual(output.shape, x.shape)
             self.assertTrue(torch.isfinite(output).all())
             output.square().mean().backward()
@@ -134,7 +132,7 @@ class ReleaseTests(unittest.TestCase):
 
     def test_diffusion_loss_and_short_sampling(self):
         x = torch.randn(1, 8, 64, 64) * 0.1
-        cond = dict(zf=[x], zcs=[x], zcf=[x], prompt=[['WV2']])
+        cond = dict(zf=[x], zcs=[x], zcf=[x])
         model = small_model(TRAIN_CONFIG)
         loss, metrics = model.p_losses(x, cond, torch.tensor([100]))
         self.assertTrue(torch.isfinite(loss))
@@ -146,6 +144,63 @@ class ReleaseTests(unittest.TestCase):
                 cond, cond, shape=list(x.shape), skip=20, verbose=False)
         self.assertEqual(result.shape, x.shape)
         self.assertTrue(torch.isfinite(result).all())
+
+    def test_time_modulation_matches_legacy_outputs_and_gradients(self):
+        # The old implementation discarded both text projections. Preserve its
+        # effective math rather than replacing time modulation with new behavior.
+        block = MSCA_Block_GatedConv_With_SMFA_62(8, 8, 8, 8, 128)
+        for bands in (4, 8):
+            for text_scale in (0.0, 100.0):
+                reference = copy.deepcopy(block)
+                x = torch.randn(1, 8, bands, 8, 8, requires_grad=True)
+                old_x = x.detach().clone().requires_grad_(True)
+                t = torch.randn(1, 8, requires_grad=True)
+                old_t = t.detach().clone().requires_grad_(True)
+                text = torch.randn(1, 128) * text_scale
+                time1 = reference.tim_embed1(old_t).reshape(1, 8, 1, 1, 1)
+                time2 = reference.tim_embed2(old_t).reshape(1, 8, 1, 1, 1)
+                text1 = reference.text_embed1(text)
+                text1 = time1.reshape(1, 8, 1, 1, 1)
+                text2 = reference.text_embed2(text)
+                text2 = time2.reshape(1, 8, 1, 1, 1)
+                data = reference.smfa1(reference.norm1(old_x) * time1 + time2) + old_x
+                expected = reference.smfa2(reference.norm2(data) * text1 + text2)
+                actual = block(x, t)
+                torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+                actual.square().mean().backward()
+                expected.square().mean().backward()
+                torch.testing.assert_close(x.grad, old_x.grad, rtol=0, atol=0)
+                torch.testing.assert_close(t.grad, old_t.grad, rtol=0, atol=0)
+                for name, parameter in block.named_parameters():
+                    old_parameter = dict(reference.named_parameters())[name]
+                    if parameter.grad is None:
+                        self.assertIsNone(old_parameter.grad, name)
+                    else:
+                        torch.testing.assert_close(parameter.grad, old_parameter.grad, rtol=0, atol=0)
+                block.zero_grad(set_to_none=True)
+
+    def test_legacy_text_encoder_keys_are_ignored_only(self):
+        model = small_model(EVAL_CONFIG)
+        state = model.state_dict()
+        legacy_key = 'model.diffusion_model.clip_text_model.transformer.dummy_weight'
+        state[legacy_key] = torch.zeros(2)
+        result = model.load_state_dict(state, strict=True)
+        self.assertEqual(result.missing_keys, [])
+        self.assertEqual(result.unexpected_keys, [])
+        state['model.diffusion_model.unknown_weight'] = torch.zeros(2)
+        with self.assertRaises(RuntimeError):
+            model.load_state_dict(state, strict=True)
+        del state['model.diffusion_model.unknown_weight']
+        del state['model.diffusion_model.rebuild.weight']
+        with self.assertRaises(RuntimeError):
+            model.load_state_dict(state, strict=True)
+
+    def test_evaluation_help_without_prompt(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / 'scripts/WV3/eval.py'), '--help'],
+            cwd=str(ROOT), capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn('--prompt', result.stdout)
 
     def test_sweep_progress_is_transactional(self):
         script = ROOT / 'infer/WV3/eval.sh'

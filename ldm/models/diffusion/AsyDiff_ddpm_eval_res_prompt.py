@@ -374,8 +374,7 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
         xcf = self.get_input_ori(batch, "grey_char_img")
         zcf = xcf
 
-        prompt = batch["prompt"]
-        c = dict(zf=[zf], zcs=[zcs], zcf=[zcf], prompt=[prompt])
+        c = dict(zf=[zf], zcs=[zcs], zcf=[zcf])
 
         loss = self(x, c)
         return loss
@@ -420,8 +419,7 @@ class AsyDiff_model_eval_Gencase_Loss(LatentDiffusion):
         if N is not None:
             zcf = zcf[:N]
 
-        prompt = batch["prompt"]
-        c = dict(zf=[zf], zcs=[zcs], zcf=[zcf], prompt=[prompt])
+        c = dict(zf=[zf], zcs=[zcs], zcf=[zcf])
 
         N = min(x.shape[0], N)
         n_row = min(x.shape[0], n_row)
@@ -1008,11 +1006,9 @@ class DiffusionWrapper_AsyDiff_model_eval_Gencase(pl.LightningModule):
         # cond[zcf] 表示 pan 部分
         zcs = torch.cat(cond['zcs'], 1).to(device)
         zcf = torch.cat(cond['zcf'], 1).to(device)
-        # prompt = torch.cat(cond['prompt'], 1).to(device)
-        prompt = cond['prompt'][0]
         # t = t.to(torch.float32)
         t = t.to(device)
 
-        out = self.diffusion_model(lrms=zcs, pan=zcf, prompts=prompt, xt=x, timesteps=t)
+        out = self.diffusion_model(lrms=zcs, pan=zcf, xt=x, timesteps=t)
 
         return out

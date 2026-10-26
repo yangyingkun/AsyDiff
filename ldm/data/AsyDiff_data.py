@@ -8,10 +8,9 @@ import numpy as np
 
 import h5py
 
-class PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9(Dataset):
-    def __init__(self, h5py_path, img_scale, prompt, size=64, scene_file=None):
+class PansharpeningDataset(Dataset):
+    def __init__(self, h5py_path, img_scale, size=64, scene_file=None):
         super().__init__()
-        self.prompt = prompt
 
         data = h5py.File(h5py_path)  # NxCxHxW = 0x1x2x3=8806x8x64x64
 
@@ -49,7 +48,7 @@ class PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9(Dataset):
             f"gt: {self.gt.size()}, lms: {self.lms.size()}, pan_hp: {self.pan_hp.size()}, ms_hp: {self.ms_hp.size()} with {img_scale}")
 
         # self.grounding = [json.loads(q)['answer'][37:] for q in open(os.path.expanduser(grounding_file), "r")]
-        self.scene = []  # Scene descriptions do not enter this satellite-prompt model.
+        self.scene = []  # Scene descriptions do not enter this model.
 
         # 提取所有的answer字段，并存储在一个列表中
         self.dataset_len = self.lms.shape[0]  # 目录下所有图像的数量
@@ -164,7 +163,5 @@ class PansharpeningTrain_WV3_Res_Scene_Weight_Prompt_9(Dataset):
         example["style_imgs"] = style_img           # 1, 128, 128, 8
         example["char_img"] = char_img              # 128, 128, 8
         example["grey_char_img"] = grey_char_img    # 128, 128, 8
-
-        example["prompt"] = self.prompt   # String 一段场景字符串描述
 
         return example

@@ -6,7 +6,7 @@ The release includes the requested training/inference entry points, their config
 
 ## Requirements and installation
 
-The source environment uses Python **3.8.20**, PyTorch **2.4.1 + CUDA 12.1**, torchvision **0.19.1**, PyTorch Lightning **1.6.5**, and transformers **4.46.0**. Use a CUDA-capable NVIDIA GPU for training and the supplied evaluation entry point.
+The source environment uses Python **3.8.20**, PyTorch **2.4.1 + CUDA 12.1**, torchvision **0.19.1**, PyTorch Lightning **1.6.5**. No text encoder or Transformers installation is required. Use a CUDA-capable NVIDIA GPU for training and the supplied evaluation entry point.
 
 ```bash
 git clone https://github.com/yangyingkun/AsyDiff.git
@@ -28,41 +28,26 @@ python -m pip install -e .
 
 Keep `pip<24.1`: newer pip releases reject Lightning 1.6.5's legacy package metadata. Do not upgrade Lightning to 2.x; these entry points use its 1.x Trainer API. xformers matches the source environment; the code also includes a fallback when it is unavailable. The requirements are a runtime subset, not a dump of unrelated packages from the source environment. A fresh-environment installation has not yet been validated.
 
-## Data and pretrained text encoder
+## Data preparation
 
 Prepare the datasets in HDF5 format. Obtain data from its original providers or the [PanCollection project](https://github.com/liangjiandeng/PanCollection), subject to their terms. No datasets are redistributed here.
 
 ```text
 AsyDiff/
-├── data/
-│   ├── WV3/train_wv3.h5
-│   ├── QB/train_qb.h5
-│   ├── GF2/train_gf2.h5
-│   └── WV2/
-│       ├── test_wv2_data_RR.h5
-│       └── test_wv2_data_FR.h5
-└── clip-vit-large-patch14-local/
-    ├── config.json
-    ├── tokenizer_config.json
-    ├── special_tokens_map.json
-    ├── vocab.json
-    ├── merges.txt
-    └── model.safetensors (or pytorch_model.bin)
+└── data/
+    ├── WV3/train_wv3.h5
+    ├── QB/train_qb.h5
+    ├── GF2/train_gf2.h5
+    └── WV2/
+        ├── test_wv2_data_RR.h5
+        └── test_wv2_data_FR.h5
 ```
 
 HDF5 arrays use **N × C × H × W** layout. Training and reduced-resolution test files require `gt`, `lms`, `ms`, and `pan`. Full-resolution files require `lms`, `ms`, and `pan`. `lms` is upsampled multispectral imagery aligned with PAN; `ms` is the original low-resolution multispectral image. PAN has one channel. WV3/WV2 use eight spectral bands; QB/GF2 use four. Training patches are configured at 64 × 64. Values are divided by **2047** for WV3/QB and **1023** for GF2; the selected WV2 evaluator uses **2047**.
 
 Set each `*.params.train.params.h5py_path` in the [training configuration](configs/AsyDiff/WV3/config/Trans_trans.yaml), or override it on the command line. Font files and scene JSONL files are not needed: neither contributes to the selected loader's returned samples.
 
-Prepare the Hugging Face [CLIP ViT-L/14](https://huggingface.co/openai/clip-vit-large-patch14) tokenizer and text-encoder files locally. For example, download them separately:
-
-```bash
-huggingface-cli download openai/clip-vit-large-patch14 \
-  --include config.json tokenizer_config.json special_tokens_map.json vocab.json merges.txt tokenizer.json pytorch_model.bin \
-  --local-dir clip-vit-large-patch14-local
-```
-
-To reuse an existing local copy, set `export ASYDIFF_CLIP_PATH=/path/to/clip-vit-large-patch14-local`. The model also accepts `clip_text_path` in its UNet configuration. These files are not uploaded to GitHub. Use only trusted checkpoint sources and follow their model licenses.
+The loader is `ldm.data.AsyDiff_data.PansharpeningDataset`. It takes `h5py_path` and `img_scale` (plus the optional compatibility arguments `size` and `scene_file`), and does not accept or return `prompt`. Training and evaluation condition only on image tensors. No CLIP weights or satellite text are needed. Use only trusted checkpoint sources.
 
 ## Training: WV3 + QB + GF2
 
@@ -97,7 +82,7 @@ CUDA_VISIBLE_DEVICES=1 bash tools/train.sh --max_steps 2 \
 
 ## Evaluation: WV2 reduced/full resolution
 
-The script remains under `infer/WV3/` to preserve the original entry-point location, but **its test data and default satellite prompt are WV2**. Set the checkpoint directory and a starting step that actually exists:
+The script remains under `infer/WV3/` to preserve the original entry-point location, but **its test data are WV2**. No prompt argument is required or accepted. Set the checkpoint directory and a starting step that actually exists:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
@@ -130,10 +115,10 @@ docs/              Release scope and compatibility notes
 python -m unittest discover -s tests -v
 ```
 
-The smoke tests use synthetic data and a stand-in text encoder; they do not download weights, train the full experiment, or establish numerical benchmark performance. See [release notes](docs/release_notes.md) for packaging changes and retained source behavior.
+The smoke tests use synthetic data without a text encoder; they do not download weights, train the full experiment, or establish numerical benchmark performance. See [release notes](docs/release_notes.md) for packaging changes and retained source behavior.
 
 ## Acknowledgments and license
 
-The implementation builds on [Latent Diffusion](https://github.com/CompVis/latent-diffusion), [Stable Diffusion](https://github.com/Stability-AI/stablediffusion), the CVPR 2024 work *Generate Like Experts: Multi-Stage Font Generation by Incorporating Font Transfer Process into Diffusion Models* by Bin Fu et al., and [FFG-benchmarks](https://github.com/clovaai/fewshot-font-generation). CLIP is provided by [OpenAI](https://github.com/openai/CLIP) and Hugging Face Transformers. Original copyright notices are retained in [LICENSE](LICENSE) and [licenses/FFG-MIT.txt](licenses/FFG-MIT.txt).
+The implementation builds on [Latent Diffusion](https://github.com/CompVis/latent-diffusion), [Stable Diffusion](https://github.com/Stability-AI/stablediffusion), the CVPR 2024 work *Generate Like Experts: Multi-Stage Font Generation by Incorporating Font Transfer Process into Diffusion Models* by Bin Fu et al., and [FFG-benchmarks](https://github.com/clovaai/fewshot-font-generation). Original copyright notices are retained in [LICENSE](LICENSE) and [licenses/FFG-MIT.txt](licenses/FFG-MIT.txt).
 
 No AsyDiff paper metadata, pretrained release, or benchmark scores are supplied in this source release; no publication citation is invented.
